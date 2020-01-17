@@ -1,14 +1,15 @@
 function hideStatus(){
   $('.top-safe-area').addClass( "transparent-status-bar-animation" );
 }
+
 function showStatus(){
   $('.top-safe-area').removeClass( "transparent-status-bar-animation transparent-status-bar" );
 }
 
-
 function hideStatusFast(){
   $('.top-safe-area').addClass( "transparent-status-bar transparent-status-bar-animation" );
 }
+
 function showStatusFast(){
   $('.top-safe-area').removeClass( "transparent-status-bar transparent-status-bar-animation" );
 }
