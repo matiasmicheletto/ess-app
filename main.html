@@ -14,35 +14,56 @@
 
 <body>
 	<div id="app">
-		<div class="view view-main">
-			<div data-name="home" class="page">
+		<div class="view">
+			<div class="page">
 
 				<!-- Top Navbar -->
 				<div class="navbar">
 					<div class="navbar-bg"></div>
 					<div class="navbar-inner">
-						<div class="title"><i class="material-icons panel-open" style="cursor: pointer;">menu</i>  Evacuation support app</div>
+						<div class="title"><i class="material-icons panel-open" style="cursor: pointer;">menu</i>
+							Evacuation
+							support app</div>
 					</div>
 				</div>
 
 				<div class="panel panel-left panel-cover panel-init">
-					<p>panel content</p>
+					<div class="block">
+
+						<h4>MENU</h4>
+
+						<div class="list links-list">
+							<ul>
+								<li>
+									<a class="panel-close" href="/">Home</a>
+								</li>
+								<li>
+									<a class="panel-close" href="/help/">Help</a class="panel-close">
+								</li>
+								<li>
+									<a class="panel-close" href="/about/">About</a class="panel-close">
+								</li>
+							</ul>
+						</div>
+
+					</div>
 				</div>
+
+				<div class="view-main"></div>
 
 				<div class="toolbar toolbar-bottom">
 					<div class="toolbar-inner">
 						<!-- Toolbar links -->
-						<a href="#" class="link">Link 1</a>
-						<a href="#" class="link">Link 2</a>
+						<a class="link back" style="cursor:pointer"><i class="material-icons">arrow_back_ios</i></a>
+						<a href="/" class="link"><i class="material-icons">home</i></a>
 					</div>
 				</div>
-
-				<div class="page-content"></div>
 
 			</div>
 		</div>
 	</div>
 	<script type="text/javascript" src="assets/js/framework7.bundle.min.js"></script>
+	<script type="text/javascript" src="custom/js/homeCtrl.js"></script>
 	<script type="text/javascript" src="custom/js/init.js"></script>
 </body>
 
