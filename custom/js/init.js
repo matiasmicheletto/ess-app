@@ -25,9 +25,6 @@ var app = new Framework7({
   root: '#app',
   name: 'ESS App',
   id: 'com.ess-app.test',
-  panel: {
-    swipe: 'left',
-  },
   routes: routes
 });
 
