@@ -60,3 +60,16 @@ Se necesita una aplicación multi-plataforma (Android y iOS) que tenga almacenad
 #### Serialización de mensajes
 
 Se propone usar MessagePack para la comunicación entre los componentes debido a su eficiencia, tamaño y portabilidad: https://msgpack.org/  
+
+
+
+
+
+
+
+
+
+TODO:
+  - detalle de about  
+  - detalle de ayuda  
+  - mostrar modal en boton agregado
