@@ -3,3 +3,7 @@
     width: 100vw;
     position: absolute;
 }
+
+.dialog-button {
+    text-align: left!important;
+}
