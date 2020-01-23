@@ -1,13 +1,17 @@
 var homeCtrl = function () { // Controller vista home
 
     // Mostrar preloader por 10 seg o hasta que inicialice el mapa
-    var preloader = app.dialog.preloader("Loading location...", "blue");
+    const preloader = app.dialog.preloader("Loading location...", "blue");
     setTimeout(function () {
         if (preloader.opened)
             preloader.close();
     }, 10000);
 
-    // Inicializar mapa
+
+
+    /////// Inicializar mapa //////////
+    var current_location = null; // Ubicacion actual del usuario
+    var marker_list = []; // Lista de marcadores (wus, eventos)
     var map = L.map('map').fitWorld();
     L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
         maxZoom: 18,
@@ -19,81 +23,110 @@ var homeCtrl = function () { // Controller vista home
     map.on('locationfound', function (e) {
         console.log(e);
         var radius = e.accuracy;
-        L.marker(e.latlng).addTo(map).bindPopup("You are within " + radius + " meters from this point").openPopup();
-        L.circle(e.latlng, radius).addTo(map);
+        if(!current_location){ // Si el marcador no fue creado, crear y agregar al mapa
+            current_location = {
+                marker:L.marker(e.latlng),
+                accuracy: L.circle(e.latlng, radius),
+            };
+            current_location.marker.addTo(map).bindPopup("You are within " + radius + " meters from this point");
+            current_location.accuracy.addTo(map);
+            current_location.marker.openPopup();
+        }else{ // Si ya existe, mover
+            current_location.marker.setLatLng(e.latlng);
+            current_location.accuracy.setLatLng(e.latlng);
+        }
+        
         if (preloader.opened)
             preloader.close();
     });
 
     // Mostrar ubicación actual
     map.locate({
-        setView: true,
-        maxZoom: 16
+        setView: true, // Forzar vista
+        maxZoom: 16 // Zomm
     });
+
+    // Cada cierto intervalo, actualizar posicion (por si se va moviendo)
+    setInterval(function(){
+        map.locate({});
+    },5000);
+    
 
 
     /////// Reporte de eventos /////
-    var reportEventHere = function (event_type) { // Reportar eventos de distintos tipos
-        console.log("reportado: " + event_type);
-    };
+    const event_types = [ // Lista de eventos, iconos y descripciones
+        {
+            key: "fire",
+            text: "Fire",
+            icon: "custom/img/event_fire.png"
+        },
+        {
+            key: "gas",
+            text: "Gas escapes",
+            icon: "custom/img/event_gas.png"
+        },
+        {
+            key: "electricity",
+            text: "Dropped cables",
+            icon: "custom/img/event_electricity.png"
+        },
+        {
+            key: "closed",
+            text: "Closed path",
+            icon: "custom/img/event_closed.png"
+        },
+        {
+            key: "collapse",
+            text: "Collapse",
+            icon: "custom/img/event_collapse.png"
+        },
+        {
+            key: "other",
+            text: "Other event",
+            icon: "custom/img/event_other.png"
+        }
+    ];
 
-    // Boton para insertar evento en el mapa
+    // Botones del dialogo para reportar eventos
+    var buttons = []; // Lista de botones del menu
+    event_types.forEach(function(ev, type){ // Para cada evento definido, crear un boton del menu
+        buttons.push({
+            text: '<img src="'+ev.icon+'" style="max-width:50px;vertical-align: middle;"/> <span style="margin-left:20px;font-size:1.1em;"> '+ev.text+'</span>',
+            onClick: function () { // Callback de click de cada boton
+                    // Agregar marcador a la lista que tiene el mapa
+                    console.log(type);
+                    console.log(event_types[type].text);
+                    marker_list.push(L.marker(current_location.marker.getLatLng()));
+                    marker_list[marker_list.length-1].addTo(map).bindPopup(event_types[type].text+" near this location.").openPopup();
+                }
+        });
+    });
+
+    // Crear dialogo
+    const event_dialog = app.dialog.create({
+        title: 'Report event',
+        text: 'Select the type of event from the list to report for your current location',
+        buttons: buttons,
+        verticalButtons: true,
+    });
+
+    // Control para insertar eventos en el mapa
     L.Control.Marker = L.Control.extend({
         onAdd: function (map) {
             var button = L.DomUtil.create('button');
             button.className = "button button-raised button-fill color-white text-color-black";
             button.innerHTML = "<i class='material-icons'>room</i>";
-            button.onclick = function () {
-                app.dialog.create({
-                    title: 'Report event',
-                    text: 'Select the type of event from the list to report for your current location',
-                    buttons: [{
-                            text: '<img src="custom/img/event_fire.png" style="max-width:50px;vertical-align: middle;"/> <span style="margin-left:20px;font-size:1.1em;"> Fire</span>',
-                            onClick: function () {
-                                reportEventHere('fire');
-                            }
-                        },
-                        {
-                            text: '<img src="custom/img/event_gas.png" style="max-width:50px;vertical-align: middle;"/> <span style="margin-left:20px;font-size:1.1em;"> Gas escapes</span>',
-                            onClick: function () {
-                                reportEventHere('gas');
-                            }
-                        },
-                        {
-                            text: '<img src="custom/img/event_electricity.png" style="max-width:50px;vertical-align: middle;"/> <span style="margin-left:20px;font-size:1.1em;"> Dropped cables</span>',
-                            onClick: function () {
-                                reportEventHere('electricity');
-                            }
-                        },
-                        {
-                            text: '<img src="custom/img/event_closed.png" style="max-width:50px;vertical-align: middle;"/> <span style="margin-left:20px;font-size:1.1em;"> Closed path</span>',
-                            onClick: function () {
-                                reportEventHere('closed');
-                            }
-                        },
-                        {
-                            text: '<img src="custom/img/event_collapse.png" style="max-width:50px;vertical-align: middle;"/> <span style="margin-left:20px;font-size:1.1em;"> Collapse</span>',
-                            onClick: function () {
-                                reportEventHere('collapse');
-                            }
-                        },
-                        {
-                            text: '<img src="custom/img/event_other.png" style="max-width:50px;vertical-align: middle;"/> <span style="margin-left:20px;font-size:1.1em;"> Others</span>',
-                            onClick: function () {
-                                reportEventHere('other');
-                            }
-                        }
-                    ],
-                    verticalButtons: true,
-                }).open();
+            button.onclick = function () { // Evento de clickeo del boton
+                event_dialog.open(); // Abrir dialogo
             };
             return button;
         },
         onRemove: function (map) {}
     });
+
     L.control.marker = function (opts) {
         return new L.Control.Marker(opts);
     };
-    L.control.marker().addTo(map);
 
+    L.control.marker().addTo(map);
 };
