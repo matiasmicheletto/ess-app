@@ -119,7 +119,7 @@ var homeCtrl = function () { // Controller vista home
     // Crear dialogo
     const event_dialog = app.dialog.create({
         title: 'Report event',
-        text: 'Select the type of event from the list to report for your current location',
+        text: 'Select the type of event from the list to report for this location',
         buttons: buttons,
         closeByBackdropClick: true,
         verticalButtons: true,
