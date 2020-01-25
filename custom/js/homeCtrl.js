@@ -23,7 +23,7 @@ var homeCtrl = function () { // Controller vista home
 
     // Callback de click o tap: mostrar menu para reportarr evento aqui
     map.on('click', function(e){
-        tap_location = e.latlng;
+        tap_location = e.latlng; // Guardar la posicion donde hizo click
         event_dialog.open();
     });
 
@@ -66,32 +66,68 @@ var homeCtrl = function () { // Controller vista home
         {
             key: "fire",
             text: "Fire",
-            icon: "custom/img/event_fire.png"
+            button_icon: "custom/img/event_fire.png",
+            marker_icon: L.icon({
+                    iconUrl: 'custom/img/event_fire.png',
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 30],
+                    popupAnchor: [0, -30]
+                })
         },
         {
             key: "gas",
             text: "Gas escapes",
-            icon: "custom/img/event_gas.png"
+            button_icon: "custom/img/event_gas.png",
+            marker_icon: L.icon({
+                    iconUrl: 'custom/img/event_gas.png',
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 30],
+                    popupAnchor: [0, -30]
+                })
         },
         {
             key: "electricity",
             text: "Dropped cables",
-            icon: "custom/img/event_electricity.png"
+            button_icon: "custom/img/event_electricity.png",
+            marker_icon: L.icon({
+                    iconUrl: 'custom/img/event_electricity.png',
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 30],
+                    popupAnchor: [0, -30]
+                })
         },
         {
             key: "closed",
             text: "Closed path",
-            icon: "custom/img/event_closed.png"
+            button_icon: "custom/img/event_closed.png",
+            marker_icon: L.icon({
+                    iconUrl: 'custom/img/event_closed.png',
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 30],
+                    popupAnchor: [0, -30]
+                })
         },
         {
             key: "collapse",
             text: "Collapse",
-            icon: "custom/img/event_collapse.png"
+            button_icon: "custom/img/event_collapse.png",
+            marker_icon: L.icon({
+                    iconUrl: 'custom/img/event_collapse.png',
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 30],
+                    popupAnchor: [0, -30]
+                })
         },
         {
             key: "other",
             text: "Other event",
-            icon: "custom/img/event_other.png"
+            button_icon: "custom/img/event_other.png",
+            marker_icon: L.icon({
+                    iconUrl: 'custom/img/event_other.png',
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 30],
+                    popupAnchor: [0, -30]
+                })
         }
     ];
 
@@ -99,19 +135,20 @@ var homeCtrl = function () { // Controller vista home
     var buttons = []; // Lista de botones del menu
     event_types.forEach(function(ev, type){ // Para cada evento definido, crear un boton del menu
         buttons.push({
-            text: '<img src="'+ev.icon+'" style="max-width:50px;vertical-align: middle;"/> <span style="margin-left:20px;font-size:1.1em;"> '+ev.text+'</span>',
+            text: '<img src="'+ev.button_icon+'" style="max-width:50px;vertical-align: middle;"/> <span style="margin-left:20px;font-size:1.1em;"> '+ev.text+'</span>',
             onClick: function () { // Callback de click de cada boton
                     // Agregar marcador a la lista que tiene el mapa
                     //console.log(event_types[type].text);
-                    if(tap_location){
-                        marker_list.push(L.marker(tap_location)); // TODO: cuando se conecte a un WU, reportar esta lista
-                        marker_list[marker_list.length-1].addTo(map).bindPopup(event_types[type].text+" near this location.").openPopup();
-                    }else{
-                        marker_list.push(L.marker(current_location.marker.getLatLng())); // TODO: cuando se conecte a un WU, reportar esta lista
-                        marker_list[marker_list.length-1].addTo(map).bindPopup(event_types[type].text+" near this location.").openPopup();
-                    }
+                    var marker; // Objeto marcador
+                    if(tap_location) // Si esta variable esta definida, el contexto es agregar marcador en la posicion donde se clickeo
+                        marker = L.marker(tap_location, {icon: event_types[type].marker_icon}); 
+                    else // Si no hay tap_location, se agrega el marcador a la posicion actual
+                        marker = L.marker(current_location.marker.getLatLng(), {icon: event_types[type].marker_icon});
+                    marker_list.push(marker);
+                    marker_list[marker_list.length-1].addTo(map).bindPopup(event_types[type].text+" near this location.").openPopup();
 
                     // TODO: reportar evento al WU actual
+                    // TODO: cuando se conecte a un WU, reportar esta lista
                 }
         });
     });
