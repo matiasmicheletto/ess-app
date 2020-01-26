@@ -144,8 +144,15 @@ var homeCtrl = function () { // Controller vista home
                         marker = L.marker(tap_location, {icon: event_types[type].marker_icon}); 
                     else // Si no hay tap_location, se agrega el marcador a la posicion actual
                         marker = L.marker(current_location.marker.getLatLng(), {icon: event_types[type].marker_icon});
-                    marker_list.push(marker);
-                    marker_list[marker_list.length-1].addTo(map).bindPopup(event_types[type].text+" near this location.").openPopup();
+                    marker.on('click',function(e){
+                        app.dialog.confirm('Remove event from map?', function () {
+                            marker_list.splice(e.target.idx,1); // Quitar marcador de la lista
+                            e.target.removeFrom(map); // Quitarlo del mapa;    
+                        });
+                    });
+                    marker.idx = marker_list.length+1; // Indice del marcador en el arreglo (para identificarlo)
+                    marker_list.push(marker); // Guardar el marcador en la lista
+                    marker.addTo(map).bindPopup(event_types[type].text+" near this location.").openPopup();
 
                     // TODO: reportar evento al WU actual
                     // TODO: cuando se conecte a un WU, reportar esta lista
@@ -153,7 +160,7 @@ var homeCtrl = function () { // Controller vista home
         });
     });
 
-    // Crear dialogo
+    // Crear dialogo de seleccion de eventos
     const event_dialog = app.dialog.create({
         title: 'Report event',
         text: 'Select the type of event from the list to report for this location',
