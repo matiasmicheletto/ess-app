@@ -1,10 +1,9 @@
-var homeCtrl = function () { // Controller vista home
+var mapCtrl = function () { // Controller vista home
 
     // Mostrar preloader por 10 seg o hasta que inicialice el mapa
-    const preloader = app.dialog.preloader("Loading location...", "blue");
     setTimeout(function () {
-        if (preloader.opened)
-            preloader.close();
+        if (app.preloader.opened)
+            app.preloader.close();
     }, 10000);
 
 
@@ -32,12 +31,22 @@ var homeCtrl = function () { // Controller vista home
         var radius = e.accuracy;
         if(!current_location){ // Si el marcador no fue creado, crear y agregar al mapa
             current_location = {
-                marker:L.marker(e.latlng),
+                marker: L.marker(e.latlng),
                 accuracy: L.circle(e.latlng, radius),
             };
             current_location.marker.addTo(map).bindPopup("You are within " + radius + " meters from this point");
             current_location.accuracy.addTo(map);
             current_location.marker.openPopup();
+
+            // Pedir ruta de escape (si no esta conectado a un WU, devuelve camino hasta algun WU mas cercano)
+            app.getRoute(e.latlng).then(function(waypoints){
+                L.Routing.control({
+                    waypoints: waypoints,
+                    collapsible: true, // Menu de instrucciones desplegable
+                    draggableWaypoints: false, // Que no se puedan arrastrar los puntos
+                    addWaypoints: false // Que no se puedan agregar puntos
+                  }).addTo(map).hide();
+            });
         }else{ // Si ya existe, mover
             current_location.marker.setLatLng(e.latlng);
             current_location.accuracy.setLatLng(e.latlng);
@@ -45,8 +54,8 @@ var homeCtrl = function () { // Controller vista home
         
         console.log(current_location.marker.getLatLng());
 
-        if (preloader.opened)
-            preloader.close();
+        if (app.preloader.opened)
+            app.preloader.close();
     });
 
     // Mostrar ubicación actual
@@ -141,7 +150,7 @@ var homeCtrl = function () { // Controller vista home
             var marker = L.marker(marker_list[k].latlng, {icon: event_types[marker_list[k].type].marker_icon});
             marker.idx = k; // Indice del marcador en el arreglo (para identificarlo)
             marker.on('click',function(e){ // Evento de clickeo sobre el marcador
-                app.dialog.confirm('Remove event from map?', function () { // Dialogo por defecto para confirmar la operacion con callback de ok
+                app.f7.dialog.confirm('Remove event from map?', function () { // Dialogo por defecto para confirmar la operacion con callback de ok
                     marker_list.splice(e.target.idx,1); // Quitar marcador de la lista
                     localStorage.setItem("marker_list", JSON.stringify(marker_list)); // Actualizar en storage
                     e.target.removeFrom(map); // Quitarlo del mapa;   
@@ -165,7 +174,7 @@ var homeCtrl = function () { // Controller vista home
                     else // Si no hay tap_location, se agrega el marcador a la posicion actual
                         marker = L.marker(current_location.marker.getLatLng(), {icon: event_types[type].marker_icon});    
                     marker.on('click',function(e){ // Evento de clickeo sobre el marcador
-                        app.dialog.confirm('Remove event from map?', function () { // Dialogo por defecto para confirmar la operacion con callback de ok
+                        app.f7.dialog.confirm('Remove event from map?', function () { // Dialogo por defecto para confirmar la operacion con callback de ok
                             marker_list.splice(e.target.idx,1); // Quitar marcador de la lista
                             localStorage.setItem("marker_list", JSON.stringify(marker_list)); // Actualizar en storage
                             e.target.removeFrom(map); // Quitarlo del mapa;   
@@ -183,7 +192,7 @@ var homeCtrl = function () { // Controller vista home
     });
 
     // Crear dialogo de seleccion de eventos
-    const event_dialog = app.dialog.create({
+    const event_dialog = app.f7.dialog.create({
         title: 'Report event',
         text: 'Select the type of event from the list to report for this location',
         buttons: buttons,
@@ -191,6 +200,8 @@ var homeCtrl = function () { // Controller vista home
         verticalButtons: true,
     });
 
+
+    /* TODO: el boton no funciona bien en conjunto con el control de ruta
     // Control para insertar eventos en el mapa
     L.Control.Marker = L.Control.extend({
         onAdd: function (map) {
@@ -212,4 +223,6 @@ var homeCtrl = function () { // Controller vista home
     };
 
     L.control.marker().addTo(map);
+
+    */
 };
