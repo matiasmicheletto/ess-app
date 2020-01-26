@@ -8,12 +8,11 @@ var homeCtrl = function () { // Controller vista home
     }, 10000);
 
 
-
-    /////// Inicializar mapa //////////
     var current_location = null; // Ubicacion actual del usuario (Obj: {marker, accuracy})
+    var marker_list = []; // Lista de marcadores (L.marker) para guardar posiciones de wus y eventos
     var tap_location; // Posicion donde clickea en el mapa (para reportar evento) (Obj: {lat, long})
-    var marker_list = []; // Lista de marcadores (wus, eventos)
-    
+
+    // Inicializar mapa
     var map = L.map('map').fitWorld();
     L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
         maxZoom: 18,
@@ -24,7 +23,7 @@ var homeCtrl = function () { // Controller vista home
     // Callback de click o tap: mostrar menu para reportarr evento aqui
     map.on('click', function(e){
         tap_location = e.latlng; // Guardar la posicion donde hizo click
-        event_dialog.open();
+        event_dialog.open(); // Mostrar menu para elegir tipo de evento a reportar
     });
 
     // Callback de GPS
@@ -63,7 +62,7 @@ var homeCtrl = function () { // Controller vista home
     
 
 
-    /////// Reporte de eventos /////
+    // Reporte de eventos 
     const event_types = [ // Lista de eventos, iconos y descripciones
         {
             key: "fire",
@@ -133,7 +132,26 @@ var homeCtrl = function () { // Controller vista home
         }
     ];
 
-    // Botones del dialogo para reportar eventos
+    // Descargar lista de marcadores del storage, si ya fue guardada
+    var ls_data = JSON.parse(localStorage.getItem('marker_list'));
+    if(ls_data){
+        marker_list = ls_data;
+        console.log(marker_list.length+" marcadores guardados");
+        for(var k in marker_list){ // Agregar cada marcador al mapa
+            var marker = L.marker(marker_list[k].latlng, {icon: event_types[marker_list[k].type].marker_icon});
+            marker.idx = k; // Indice del marcador en el arreglo (para identificarlo)
+            marker.on('click',function(e){ // Evento de clickeo sobre el marcador
+                app.dialog.confirm('Remove event from map?', function () { // Dialogo por defecto para confirmar la operacion con callback de ok
+                    marker_list.splice(e.target.idx,1); // Quitar marcador de la lista
+                    localStorage.setItem("marker_list", JSON.stringify(marker_list)); // Actualizar en storage
+                    e.target.removeFrom(map); // Quitarlo del mapa;   
+                });
+            });
+            marker.addTo(map).bindPopup(event_types[marker_list[k].type].text+" near this location.");
+        }
+    }
+
+    // Crear lista de botones del dialogo para reportar eventos
     var buttons = []; // Lista de botones del menu
     event_types.forEach(function(ev, type){ // Para cada evento definido, crear un boton del menu
         buttons.push({
@@ -147,17 +165,19 @@ var homeCtrl = function () { // Controller vista home
                     else // Si no hay tap_location, se agrega el marcador a la posicion actual
                         marker = L.marker(current_location.marker.getLatLng(), {icon: event_types[type].marker_icon});    
                     marker.on('click',function(e){ // Evento de clickeo sobre el marcador
-                        app.dialog.confirm('Remove event from map?', function () {
+                        app.dialog.confirm('Remove event from map?', function () { // Dialogo por defecto para confirmar la operacion con callback de ok
                             marker_list.splice(e.target.idx,1); // Quitar marcador de la lista
-                            e.target.removeFrom(map); // Quitarlo del mapa;    
+                            localStorage.setItem("marker_list", JSON.stringify(marker_list)); // Actualizar en storage
+                            e.target.removeFrom(map); // Quitarlo del mapa;   
                         });
                     });
                     marker.idx = marker_list.length+1; // Indice del marcador en el arreglo (para identificarlo)
-                    marker_list.push(marker); // Guardar el marcador en la lista
                     marker.addTo(map).bindPopup(event_types[type].text+" near this location.").openPopup();
-
-                    // TODO: reportar evento al WU actual
-                    // TODO: cuando se conecte a un WU, reportar esta lista
+                    marker_list.push({ // Guardar el marcador en la lista
+                        type: type,
+                        latlng: marker.getLatLng()
+                    }); 
+                    localStorage.setItem("marker_list", JSON.stringify(marker_list)); // Actualizar en storage
                 }
         });
     });
