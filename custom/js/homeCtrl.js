@@ -11,7 +11,7 @@ var homeCtrl = function () { // Controller vista home
 
     /////// Inicializar mapa //////////
     var current_location = null; // Ubicacion actual del usuario (Obj: {marker, accuracy})
-    var tap_location = null; // Posicion donde clickea en el mapa (para reportar evento) (Obj: {lat, long})
+    var tap_location; // Posicion donde clickea en el mapa (para reportar evento) (Obj: {lat, long})
     var marker_list = []; // Lista de marcadores (wus, eventos)
     
     var map = L.map('map').fitWorld();
@@ -29,7 +29,7 @@ var homeCtrl = function () { // Controller vista home
 
     // Callback de GPS
     map.on('locationfound', function (e) {
-        console.log(e);
+        //console.log(e);
         var radius = e.accuracy;
         if(!current_location){ // Si el marcador no fue creado, crear y agregar al mapa
             current_location = {
@@ -44,6 +44,8 @@ var homeCtrl = function () { // Controller vista home
             current_location.accuracy.setLatLng(e.latlng);
         }
         
+        console.log(current_location.marker.getLatLng());
+
         if (preloader.opened)
             preloader.close();
     });
@@ -68,9 +70,9 @@ var homeCtrl = function () { // Controller vista home
             text: "Fire",
             button_icon: "custom/img/event_fire.png",
             marker_icon: L.icon({
-                    iconUrl: 'custom/img/event_fire.png',
-                    iconSize: [30, 30],
-                    iconAnchor: [15, 30],
+                    iconUrl: 'custom/img/marker_fire.png',
+                    iconSize: [40, 43],
+                    iconAnchor: [20, 43],
                     popupAnchor: [0, -30]
                 })
         },
@@ -79,9 +81,9 @@ var homeCtrl = function () { // Controller vista home
             text: "Gas escapes",
             button_icon: "custom/img/event_gas.png",
             marker_icon: L.icon({
-                    iconUrl: 'custom/img/event_gas.png',
-                    iconSize: [30, 30],
-                    iconAnchor: [15, 30],
+                    iconUrl: 'custom/img/marker_gas.png',
+                    iconSize: [40, 43],
+                    iconAnchor: [20, 43],
                     popupAnchor: [0, -30]
                 })
         },
@@ -90,9 +92,9 @@ var homeCtrl = function () { // Controller vista home
             text: "Dropped cables",
             button_icon: "custom/img/event_electricity.png",
             marker_icon: L.icon({
-                    iconUrl: 'custom/img/event_electricity.png',
-                    iconSize: [30, 30],
-                    iconAnchor: [15, 30],
+                    iconUrl: 'custom/img/marker_electricity.png',
+                    iconSize: [40, 43],
+                    iconAnchor: [20, 43],
                     popupAnchor: [0, -30]
                 })
         },
@@ -101,9 +103,9 @@ var homeCtrl = function () { // Controller vista home
             text: "Closed path",
             button_icon: "custom/img/event_closed.png",
             marker_icon: L.icon({
-                    iconUrl: 'custom/img/event_closed.png',
-                    iconSize: [30, 30],
-                    iconAnchor: [15, 30],
+                    iconUrl: 'custom/img/marker_closed.png',
+                    iconSize: [40, 43],
+                    iconAnchor: [20, 43],
                     popupAnchor: [0, -30]
                 })
         },
@@ -112,9 +114,9 @@ var homeCtrl = function () { // Controller vista home
             text: "Collapse",
             button_icon: "custom/img/event_collapse.png",
             marker_icon: L.icon({
-                    iconUrl: 'custom/img/event_collapse.png',
-                    iconSize: [30, 30],
-                    iconAnchor: [15, 30],
+                    iconUrl: 'custom/img/marker_collapse.png',
+                    iconSize: [40, 43],
+                    iconAnchor: [20, 43],
                     popupAnchor: [0, -30]
                 })
         },
@@ -123,9 +125,9 @@ var homeCtrl = function () { // Controller vista home
             text: "Other event",
             button_icon: "custom/img/event_other.png",
             marker_icon: L.icon({
-                    iconUrl: 'custom/img/event_other.png',
-                    iconSize: [30, 30],
-                    iconAnchor: [15, 30],
+                    iconUrl: 'custom/img/marker_other.png',
+                    iconSize: [40, 43],
+                    iconAnchor: [20, 43],
                     popupAnchor: [0, -30]
                 })
         }
@@ -141,10 +143,10 @@ var homeCtrl = function () { // Controller vista home
                     //console.log(event_types[type].text);
                     var marker; // Objeto marcador
                     if(tap_location) // Si esta variable esta definida, el contexto es agregar marcador en la posicion donde se clickeo
-                        marker = L.marker(tap_location, {icon: event_types[type].marker_icon}); 
+                        marker = L.marker(tap_location, {icon: event_types[type].marker_icon});     
                     else // Si no hay tap_location, se agrega el marcador a la posicion actual
-                        marker = L.marker(current_location.marker.getLatLng(), {icon: event_types[type].marker_icon});
-                    marker.on('click',function(e){
+                        marker = L.marker(current_location.marker.getLatLng(), {icon: event_types[type].marker_icon});    
+                    marker.on('click',function(e){ // Evento de clickeo sobre el marcador
                         app.dialog.confirm('Remove event from map?', function () {
                             marker_list.splice(e.target.idx,1); // Quitar marcador de la lista
                             e.target.removeFrom(map); // Quitarlo del mapa;    
@@ -175,8 +177,9 @@ var homeCtrl = function () { // Controller vista home
             var button = L.DomUtil.create('button');
             button.className = "button button-raised button-fill color-white text-color-black";
             button.innerHTML = "<i class='material-icons'>room</i>";
-            button.onclick = function () { // Evento de clickeo del boton
-                tap_location = null; // Borrar posicion de click para que se use la posicion actual
+            button.onclick = function (e) { // Evento de clickeo del boton
+                e.stopPropagation(); // Para que no dispare el evento de click sobre el mapa
+                tap_location = null; // Borrar posicion de tap o click para que use la del usuario
                 event_dialog.open(); // Abrir dialogo
             };
             return button;
