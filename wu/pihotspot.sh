@@ -28,7 +28,7 @@ WAN_INTERFACE=`ip link show | grep '^[1-9]' | awk -F ':' '{print $2}' | awk '{$1
 # LAN interface (the one for the hotspot)
 LAN_INTERFACE="wlan0"
 # Wifi driver
-LAN_WIFI_DRIVER="brcmfmac"
+LAN_WIFI_DRIVER="nl80211"
 # Install Haserl (required if you want to use the default Coova Portal)
 # Set value to Y or N
 HASERL_INSTALL="N"
