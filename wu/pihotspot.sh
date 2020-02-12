@@ -75,6 +75,12 @@ KUPIKI_SQL_COUNTERS=Y
 # Set value to Y or N
 KUPIKI_ALLOW_REGISTER=Y
 
+# EDIT: Agregar modulo tun/tap e instalar docker
+modeprobe tun
+curl -sSL https://get.docker.com | sh
+usermod -aG docker pi
+
+
 # *************************************
 #
 # PLEASE DO NOT MODIFY THE LINES BELOW
