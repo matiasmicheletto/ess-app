@@ -1,33 +1,46 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <WebSocketsServer.h>
+#include <ESP8266WebServer.h>
 #include <Ticker.h>
 
 // Parametros
-#define DEBUG true // Modo Debuggeo
-//#define VERBOSE true // Mostrar texto en cada intercambio
 #define BAUDRATE 115200 // Velocidad serial
 #define T_PERIOD 10000 // Periodo de actualizacion de estado (ms)
-#define WIFI_PWD true // Usar contrasenia
-//#define WIFI_MODE_AP true // Modo Access Point
-
+//#define WIFI_PWD true // Usar contrasenia
+#define WIFI_MODE_AP true // Modo Access Point
+#define DEBUG true // Modo Debuggeo
+//#define VERBOSE true // Mostrar texto en cada intercambio
 
 // Codigos de error
 #define ERROR_LED 2 // Pin para mostrar errores (builtin)
 enum{AP_CONFIG_ERROR, AP_INIT_ERROR};
 
+ESP8266WebServer server(80);
 WebSocketsServer webSocket = WebSocketsServer(81); // Websocket puerto 81
 
 // Funciones periodicas 
 Ticker ticker;
 
 // Autenticacion red
-const char* ssid = "B93615";
+const char* ssid = "ESSNETWORK";
 #ifdef WIFI_PWD
-  const char* pwd = "101344997";
+  const char* pwd = "ESSNETWORK";
 #endif
 
 uint8_t client_num; // Un solo cliente por vez
+
+static const char PROGMEM INDEX_HTML[] = R"( 
+<!DOCTYPE html>
+<html>
+  <head>
+      <meta charset=utf-8>
+      <title>ESSN Access Point</title>
+  </head>
+  <body>
+  </body>
+</html>
+)";
 
 void displayError(int code){ // Muestra codigos de error usando el led
   int swPeriod = 0; // Periodo de parpadeo del led en ms
@@ -99,44 +112,56 @@ void setup() {
   #endif
   
   ////// INICIALIZAR AP //////
-  IPAddress local_IP(192,168,4,1);
-  IPAddress gateway(192,168,4,2);
-  IPAddress subnet(255,255,255,0);
+  
   boolean status; // Estado del inicio AP
   
-  #if defined(DEBUG)
-    Serial.println("Configurando AP...");
-  #endif
-  
-  status  = WiFi.softAPConfig(local_IP, gateway, subnet);
-  
-  if(!status)
-    displayError(AP_CONFIG_ERROR);
-  #if defined(DEBUG)
-  else
-    Serial.println("Listo.");
-  #endif
-  
-  #if defined(DEBUG)
-    Serial.println("Iniciando AP...");
-  #endif
-  
   #ifdef WIFI_MODE_AP // Modo AP
-    status = Wifi.softAP(ssid);
-  #else // Modo STA
+    
+    #ifdef DEBUG
+      Serial.println("Configurando AP...");
+    #endif
+    
+    IPAddress local_IP(192,168,4,1);
+    IPAddress gateway(192,168,4,2);
+    IPAddress subnet(255,255,255,0);
+    status  = WiFi.softAPConfig(local_IP, gateway, subnet);
+  
+    if(!status) // Si hubo error de configuracion del AP
+      displayError(AP_CONFIG_ERROR); // Indicar
+  
+    #ifdef DEBUG
+    else
+      Serial.println("Listo.");
+    Serial.println("Iniciando AP...");
+    #endif
+  
+    status = WiFi.softAP(ssid);
+
+    if(!status) // Si hubo error de inicio del AP
+      displayError(AP_INIT_ERROR); // Indicar
+  
+    #if defined(DEBUG)
+    else
+      Serial.println("Listo.");
+    #endif
+
+  #else // Si en vez de AP es modo STA
+
     #ifdef WIFI_PWD
       status = WiFi.begin(ssid, pwd); // Con password
     #else
       status = WiFi.begin(ssid); // Sin password
     #endif
     
-    while (WiFi.status() != WL_CONNECTED) { // Esperar conexion
+    while (WiFi.status() != WL_CONNECTED) { // Esperar conexion con modem
       delay(500);
       #ifdef DEBUG
         Serial.printf(".");
       #endif
     }
+
   #endif
+
     
   if(!status)
     displayError(AP_INIT_ERROR);
@@ -154,6 +179,12 @@ void setup() {
     #endif
   #endif
 
+  // Iniciar server
+  server.on("/", []() {
+      server.send_P(200, "text/html", INDEX_HTML);
+  });
+  server.begin();
+
   webSocket.begin(); // Iniciar WebSocket Server
   webSocket.onEvent(webSocketEvent); // Habilitar event linstener
 
@@ -162,4 +193,5 @@ void setup() {
 
 void loop() {
   webSocket.loop(); // Solo chequea eventos y ejecuta el callback
+  server.handleClient(); // Eventos del server
 }
