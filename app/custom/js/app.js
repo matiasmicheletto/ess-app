@@ -1,6 +1,6 @@
 window.app = (function () {
 
-    var routes = [{ // Rutas de navegacion
+    const routes = [{ // Vistas de la app
             name: 'home',
             path: '/',
             url: './views/home.html',
@@ -20,39 +20,162 @@ window.app = (function () {
         }
     ];
 
-    var core = {}; // Atributos y metodos publicos
+    var public = {}; // Atributos y metodos publicos
+    var private = {}; // Atributos y metodo privados
 
-    core.f7 = new Framework7({
+    private.f7 = new Framework7({ // Libreria de estilos
         root: '#app',
-        name: 'ESS App',
-        id: 'com.ess-app.test',
+        name: 'ESSN App',
+        id: 'com.essn-app.test',
         routes: routes
     });
 
-    core.preloader = core.f7.dialog.preloader("Loading location...", "blue");
 
-    core.init = function () { // Inicializacion de la app
-        // Inicializacion vista
-        core.mainView = core.f7.views.create('.view-main', {
-            url: '/'
-        });
-        core.mainView.router.load("home");
+    private.event_types = { // Lista de eventos, iconos y descripciones
+        fire: {
+            text: "Fire",
+            button_icon: "custom/img/event_fire.png",
+            marker_icon: L.icon({
+                    iconUrl: 'custom/img/marker_fire.png',
+                    iconSize: [40, 43],
+                    iconAnchor: [20, 43],
+                    popupAnchor: [0, -30]
+                })
+        },
+        gas: {
+            text: "Gas escapes",
+            button_icon: "custom/img/event_gas.png",
+            marker_icon: L.icon({
+                    iconUrl: 'custom/img/marker_gas.png',
+                    iconSize: [40, 43],
+                    iconAnchor: [20, 43],
+                    popupAnchor: [0, -30]
+                })
+        },
+        electricity: {
+            text: "Dropped cables",
+            button_icon: "custom/img/event_electricity.png",
+            marker_icon: L.icon({
+                    iconUrl: 'custom/img/marker_electricity.png',
+                    iconSize: [40, 43],
+                    iconAnchor: [20, 43],
+                    popupAnchor: [0, -30]
+                })
+        },
+        closed: {
+            text: "Closed path",
+            button_icon: "custom/img/event_closed.png",
+            marker_icon: L.icon({
+                    iconUrl: 'custom/img/marker_closed.png',
+                    iconSize: [40, 43],
+                    iconAnchor: [20, 43],
+                    popupAnchor: [0, -30]
+                })
+        },
+        collapse: {
+            text: "Collapse",
+            button_icon: "custom/img/event_collapse.png",
+            marker_icon: L.icon({
+                    iconUrl: 'custom/img/marker_collapse.png',
+                    iconSize: [40, 43],
+                    iconAnchor: [20, 43],
+                    popupAnchor: [0, -30]
+                })
+        },
+        other: {
+            text: "Other event",
+            button_icon: "custom/img/event_other.png",
+            marker_icon: L.icon({
+                    iconUrl: 'custom/img/marker_other.png',
+                    iconSize: [40, 43],
+                    iconAnchor: [20, 43],
+                    popupAnchor: [0, -30]
+                })
+        }
     };
 
-    core.getRoute = function(location){ // Devuelve la ruta que hay que seguir para llegar el centro de evacuacion
+    public.getEventList = function(){ // Retornar toda la lista de eventos
+        return private.event_types;
+    };
 
-        // TODO: si esta conectado a un WU, pedir datos y calcular ruta
+    public.getEvent = function(type){ // Retorno de icono de eventos
+        return private.event_types[type] ? private.event_types[type] : private.event_types["other"]; // Si no existe, retorna evento "otros"
+    };
+
+    public.showPreloader = function(message){ // Muestra un preloader mientras carga algunas operaciones
+        private.preloader = private.f7.dialog.preloader(message, "blue");
+    };
+
+    public.hidePreloader = function(){ // Oculta el preloader si estaba abierto
+        if(private.preloader.opened)
+            private.preloader.close();
+    };
+
+    public.confirmDialog = function(message){ // Mostrar un dialogo de confirmacion
+        return new Promise(function(fulfill, reject){
+            private.f7.dialog.confirm(message,fulfill);
+        });
+    };
+
+    public.createDialog = function(dialog){ // Mostrar un dialogo customizable
+        return private.f7.dialog.create(dialog);
+    };
+
+    public.getMarkers = function(){ // Retorna lista de marcadores de la db
+        return new Promise(function(fulfill, reject){
+
+            var location = {lat: -38.6942173, lng: -62.2566036}; // Bahia blanca
+            var result = [ // Ejemplo marcadores al azar
+                {type: "fire", latlng: L.latLng(location.lat+0.005, location.lng+0.006), id:""},
+                {type: "other", latlng: L.latLng(location.lat-0.009, location.lng+0.003), id:""},
+                {type: "fire", latlng: L.latLng(location.lat-0.015, location.lng-0.001), id:""},
+                {type: "collapsed", latlng: L.latLng(location.lat-0.013, location.lng+0.016), id:""},
+                {type: "fire", latlng: L.latLng(location.lat+0.012, location.lng-0.016), id:""},
+                {type: "closed", latlng: L.latLng(location.lat+0.003, location.lng+0.005), id:""}
+            ];
+
+            return fulfill(result);
+        });
+    };
+
+    public.addMarker = function(location){ // Registrar nuevo marcador en el server
+        return new Promise(function(fulfill, reject){
+
+        });
+    };
+
+    public.removeMarker = function(id){
+        return new Promise(function(fulfill, reject){
+
+        });
+    };
+
+    public.getRoute = function(location){ // Devuelve la ruta que hay que seguir para llegar el centro de evacuacion
+        // La ruta debe ser un array de formato latLng ({lat:..., lng:...})
+
+        // TODO: Pedir datos y calcular ruta
 
         return new Promise(function(fulfill, reject){
-            return fulfill([ // Hardcodeo una ruta cualquiera
+            
+            var result = [ // Ejemplo de una ruta cualquiera:
                 location, // Partida de la ubicacion actual
                 L.latLng(location.lat-0.005, location.lng-0.006),
-                L.latLng(location.lat-0.01, location.lng-0.007),
                 L.latLng(location.lat-0.016, location.lng-0.007),
+                L.latLng(location.lat-0.018, location.lng-0.007),
                 L.latLng(location.lat-0.02, location.lng-0.008)
-            ]);
-        })
+            ];
+
+            return fulfill(result);
+        });
     };
 
-    return core;
+    public.init = function () { // Inicializacion de la app
+        // Inicializacion vista
+        private.mainView = private.f7.views.create('.view-main', {
+            url: '/'
+        });
+        private.mainView.router.load("home");
+    };
+
+    return public;
 })();
