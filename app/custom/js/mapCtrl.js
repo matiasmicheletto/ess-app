@@ -1,17 +1,47 @@
 var mapCtrl = function () { // Controller vista home
 
     // Mostrar preloader por 10 seg o hasta que inicialice el mapa
-    app.showPreloader();
+    //app.showPreloader("Loading...");
     setTimeout(function () {
         app.hidePreloader();
-    }, 10000);
+    }, 5000);
 
+    // Marcadores predefinidos
+    const startMarker = new L.Icon({
+        iconUrl: 'custom/img/start_marker.png',
+        shadowUrl: 'custom/img/marker_shadow.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41]
+      });
+
+    const waypointMarker = new L.Icon({
+        iconUrl: 'custom/img/waypoint_marker.png',
+        shadowUrl: 'custom/img/marker_shadow.png',
+        iconSize: [15, 25],
+        iconAnchor: [7, 25],
+        popupAnchor: [1, -34],
+        shadowSize: [25, 25]
+      });
+
+    const endMarker = new L.Icon({
+        iconUrl: 'custom/img/end_marker.png',
+        shadowUrl: 'custom/img/marker_shadow.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41]
+      });
 
     // Variables globales del controller de la vista
     var current_location = null; // Ubicacion actual del usuario (Obj: {marker, accuracy})
     var marker_list = []; // Lista de marcadores (L.marker) para guardar posiciones de wus y eventos
     var escape_route = null; // Ruta de escape calculada
     var tap_location; // Posicion donde clickea en el mapa (para reportar evento) (Obj: {lat, long})
+    const gpsUpdatePeriod = 20000; // Tasa de refresco de la posicion GPS (ms)
+    const routeUpdatePeriod = 20000; // El server de leaflet routing machine tiene una tasa de refresco minima (ms)
+    var lastRouteUpdate = 0; // Ultima actualizacion de la ruta
 
     // Inicializar mapa
     var map = L.map('map').fitWorld();
@@ -29,50 +59,71 @@ var mapCtrl = function () { // Controller vista home
     }).addTo(map);
     */
 
+    var setUserLocation = function(latlng, accuracy){ // Establecer posicion del usuario
+        if(!current_location){ // Si el marcador no fue creado aun, crear y agregar al mapa
+            // Crear marcador
+            current_location = {
+                marker: L.marker(latlng),
+                accuracy: L.circle(latlng, accuracy),
+            };
+
+            // Agregar marcador al mapa con su circulo de posicion estimada
+            current_location.marker.addTo(map).bindPopup("You are within " + accuracy + " meters from this point");
+            current_location.accuracy.addTo(map);
+            current_location.marker.openPopup();
+
+        }else{ // Si ya existe, solo mover
+            current_location.marker.setLatLng(latlng);
+            current_location.accuracy.setLatLng(latlng);
+            current_location.accuracy.setRadius(accuracy);
+        }
+        
+        // Pedir ruta de escape (si no esta conectado a un WU, devuelve camino hasta algun WU mas cercano)
+        if(Date.now() - lastRouteUpdate > routeUpdatePeriod){
+            app.showPreloader("Retrieving escape route...");
+            lastRouteUpdate = Date.now();
+            app.getRoute(latlng)
+            .then(function(waypoints){
+                if(escape_route) // Si ya estaba definida, eliminar del mapa
+                    map.removeControl(escape_route);
+                escape_route = L.Routing.control({
+                    waypoints: waypoints, // Recorrido
+                    collapsible: true, // Menu de instrucciones desplegable
+                    draggableWaypoints: false, // Que no se puedan arrastrar los puntos
+                    addWaypoints: false, // Que no se puedan agregar nuevos puntos
+                    createMarker: function(i, wp, nWps) {
+                        switch(i){
+                            case 0:
+                                return L.marker(wp.latLng, {
+                                    icon: startMarker
+                                }); 
+                            case nWps-1:     
+                                return L.marker(wp.latLng, {
+                                    icon: endMarker
+                                });
+                            default:   
+                                return L.marker(wp.latLng, {
+                                    icon: waypointMarker
+                                });
+                        }
+                      }
+                });
+                escape_route.addTo(map).hide(); // Agregar al mapa
+                app.hidePreloader();
+            });
+        }
+    };
+
     // Callback de click o tap: mostrar menu para reportarr evento aqui
     map.on('click', function(e){
         tap_location = e.latlng; // Guardar la posicion donde hizo click
         event_dialog.open(); // Mostrar menu para elegir tipo de evento a reportar
     });
 
-    // Callback de GPS
+    // Callback de posicino GPS actualizada
     map.on('locationfound', function (e) {
         //console.log(e);
-        var radius = e.accuracy;
-        if(!current_location){ // Si el marcador no fue creado aun, crear y agregar al mapa
-            
-            // Crear marcador
-            current_location = {
-                marker: L.marker(e.latlng),
-                accuracy: L.circle(e.latlng, radius),
-            };
-
-            // Agregar marcador al mapa con su circulo de posicion estimada
-            current_location.marker.addTo(map).bindPopup("You are within " + radius + " meters from this point");
-            current_location.accuracy.addTo(map);
-            current_location.marker.openPopup();
-
-        }else{ // Si ya existe, solo mover
-            current_location.marker.setLatLng(e.latlng);
-            current_location.accuracy.setLatLng(e.latlng);
-        }
-        
-        // Pedir ruta de escape (si no esta conectado a un WU, devuelve camino hasta algun WU mas cercano)
-        app.getRoute(e.latlng)
-        .then(function(waypoints){
-            if(escape_route) // Si ya estaba definida, eliminar del mapa
-                map.removeControl(escape_route);
-            escape_route = L.Routing.control({
-                waypoints: waypoints, // Recorrido
-                collapsible: true, // Menu de instrucciones desplegable
-                draggableWaypoints: false, // Que no se puedan arrastrar los puntos
-                addWaypoints: false // Que no se puedan agregar nuevos puntos
-            });
-            escape_route.addTo(map).hide(); // Agregar al mapa
-        });
-
-        //console.log(current_location.marker.getLatLng());
-
+        setUserLocation(e.latlng, e.accuracy);
         app.hidePreloader();
     });
 
@@ -83,9 +134,21 @@ var mapCtrl = function () { // Controller vista home
     });
 
     // Cada cierto intervalo, actualizar posicion (por si se va moviendo)
-    setInterval(function(){
+    var gpsUpdater = setInterval(function(){
         map.locate({});
-    },5000);
+    },gpsUpdatePeriod);
+
+    app.setAutoLocation = function(enabled){
+        if(gpsUpdater) // En cada cambio hay que restablecer el timer
+            clearInterval(gpsUpdater);
+
+        lastRouteUpdate = 0; // Reiniciar limitador de solicitudes
+        
+        if(enabled) // Habilitar posicionamiento automatico
+            gpsUpdater = setInterval(function(){
+                map.locate({});
+            },5000);
+    };
 
 
     // Descargar lista de marcadores de la db
@@ -141,8 +204,17 @@ var mapCtrl = function () { // Controller vista home
         });
     });
 
+    // Agregar un boton para rescribir posicion del usuario manualmente
+    buttons.push({
+        text: '<img src="custom/img/override.png" style="max-width:50px;vertical-align: middle;"/> <span style="margin-left:20px;font-size:1.1em;">Override location</span>',
+        onClick: function(){ // Callback al elegir manualmente la posicion
+            setUserLocation(tap_location,100); // Por defecto 25 metros de error
+        }
+    });
+
+
     // Crear dialogo de seleccion de eventos
-    var event_dialog = app.createDialog({
+    const event_dialog = app.createDialog({
         title: 'Report event',
         text: 'Select the type of event from the list to report for this location',
         buttons: buttons,

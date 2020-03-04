@@ -30,16 +30,18 @@ window.app = (function () {
         routes: routes
     });
 
-
     private.event_types = { // Lista de eventos, iconos y descripciones
         fire: {
             text: "Fire",
             button_icon: "custom/img/event_fire.png",
             marker_icon: L.icon({
                     iconUrl: 'custom/img/marker_fire.png',
+                    shadowUrl: 'custom/img/marker_shadow.png',
                     iconSize: [40, 43],
                     iconAnchor: [20, 43],
-                    popupAnchor: [0, -30]
+                    popupAnchor: [0, -30],
+                    shadowSize: [40, 43],
+                    shadowAnchor: [15, 43]
                 })
         },
         gas: {
@@ -47,9 +49,12 @@ window.app = (function () {
             button_icon: "custom/img/event_gas.png",
             marker_icon: L.icon({
                     iconUrl: 'custom/img/marker_gas.png',
+                    shadowUrl: 'custom/img/marker_shadow.png',
                     iconSize: [40, 43],
                     iconAnchor: [20, 43],
-                    popupAnchor: [0, -30]
+                    popupAnchor: [0, -30],
+                    shadowSize: [40, 43],
+                    shadowAnchor: [15, 43]
                 })
         },
         electricity: {
@@ -57,9 +62,12 @@ window.app = (function () {
             button_icon: "custom/img/event_electricity.png",
             marker_icon: L.icon({
                     iconUrl: 'custom/img/marker_electricity.png',
+                    shadowUrl: 'custom/img/marker_shadow.png',
                     iconSize: [40, 43],
                     iconAnchor: [20, 43],
-                    popupAnchor: [0, -30]
+                    popupAnchor: [0, -30],
+                    shadowSize: [40, 43],
+                    shadowAnchor: [15, 43]
                 })
         },
         closed: {
@@ -67,9 +75,12 @@ window.app = (function () {
             button_icon: "custom/img/event_closed.png",
             marker_icon: L.icon({
                     iconUrl: 'custom/img/marker_closed.png',
+                    shadowUrl: 'custom/img/marker_shadow.png',
                     iconSize: [40, 43],
                     iconAnchor: [20, 43],
-                    popupAnchor: [0, -30]
+                    popupAnchor: [0, -30],
+                    shadowSize: [40, 43],
+                    shadowAnchor: [15, 43]
                 })
         },
         collapse: {
@@ -77,9 +88,12 @@ window.app = (function () {
             button_icon: "custom/img/event_collapse.png",
             marker_icon: L.icon({
                     iconUrl: 'custom/img/marker_collapse.png',
+                    shadowUrl: 'custom/img/marker_shadow.png',
                     iconSize: [40, 43],
                     iconAnchor: [20, 43],
-                    popupAnchor: [0, -30]
+                    popupAnchor: [0, -30],
+                    shadowSize: [40, 43],
+                    shadowAnchor: [15, 43]
                 })
         },
         other: {
@@ -87,9 +101,12 @@ window.app = (function () {
             button_icon: "custom/img/event_other.png",
             marker_icon: L.icon({
                     iconUrl: 'custom/img/marker_other.png',
+                    shadowUrl: 'custom/img/marker_shadow.png',
                     iconSize: [40, 43],
                     iconAnchor: [20, 43],
-                    popupAnchor: [0, -30]
+                    popupAnchor: [0, -30],
+                    shadowSize: [40, 43],
+                    shadowAnchor: [15, 43]
                 })
         }
     };
@@ -120,6 +137,20 @@ window.app = (function () {
     public.createDialog = function(dialog){ // Mostrar un dialogo customizable
         return private.f7.dialog.create(dialog);
     };
+
+    public.setAutoLocation = function(enabled){ // Callback para usar en el controller del mapa
+        if(enabled)
+            console.log("Autolocation enabled");
+        else
+            console.log("Autolocation disabled");
+    };
+
+    public.toggleAutoLocation = function(){ // Callback del input checkbox del menu
+        var autoLocation = document.getElementById("autoloc_checkbox").checked;
+        public.setAutoLocation(autoLocation);
+    };
+
+    //// COMUNICACION CON API WU /////
 
     public.getMarkers = function(){ // Retorna lista de marcadores de la db
         return new Promise(function(fulfill, reject){
@@ -168,6 +199,9 @@ window.app = (function () {
             return fulfill(result);
         });
     };
+
+
+    //// INICIALIZACION ////
 
     public.init = function () { // Inicializacion de la app
         // Inicializacion vista
