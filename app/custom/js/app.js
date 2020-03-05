@@ -42,6 +42,15 @@ window.app = (function () {
                     popupAnchor: [0, -30],
                     shadowSize: [40, 43],
                     shadowAnchor: [15, 43]
+                }),
+            disabled_icon: L.icon({
+                    iconUrl: 'custom/img/disabled_marker_fire.png',
+                    shadowUrl: 'custom/img/marker_shadow.png',
+                    iconSize: [40, 43],
+                    iconAnchor: [20, 43],
+                    popupAnchor: [0, -30],
+                    shadowSize: [40, 43],
+                    shadowAnchor: [15, 43]
                 })
         },
         gas: {
@@ -49,6 +58,15 @@ window.app = (function () {
             button_icon: "custom/img/event_gas.png",
             marker_icon: L.icon({
                     iconUrl: 'custom/img/marker_gas.png',
+                    shadowUrl: 'custom/img/marker_shadow.png',
+                    iconSize: [40, 43],
+                    iconAnchor: [20, 43],
+                    popupAnchor: [0, -30],
+                    shadowSize: [40, 43],
+                    shadowAnchor: [15, 43]
+                }),
+            disabled_icon: L.icon({
+                    iconUrl: 'custom/img/disabled_marker_gas.png',
                     shadowUrl: 'custom/img/marker_shadow.png',
                     iconSize: [40, 43],
                     iconAnchor: [20, 43],
@@ -68,6 +86,15 @@ window.app = (function () {
                     popupAnchor: [0, -30],
                     shadowSize: [40, 43],
                     shadowAnchor: [15, 43]
+                }),
+            disabled_icon: L.icon({
+                    iconUrl: 'custom/img/disabled_marker_electricity.png',
+                    shadowUrl: 'custom/img/marker_shadow.png',
+                    iconSize: [40, 43],
+                    iconAnchor: [20, 43],
+                    popupAnchor: [0, -30],
+                    shadowSize: [40, 43],
+                    shadowAnchor: [15, 43]
                 })
         },
         closed: {
@@ -75,6 +102,15 @@ window.app = (function () {
             button_icon: "custom/img/event_closed.png",
             marker_icon: L.icon({
                     iconUrl: 'custom/img/marker_closed.png',
+                    shadowUrl: 'custom/img/marker_shadow.png',
+                    iconSize: [40, 43],
+                    iconAnchor: [20, 43],
+                    popupAnchor: [0, -30],
+                    shadowSize: [40, 43],
+                    shadowAnchor: [15, 43]
+                }),
+            disabled_icon: L.icon({
+                    iconUrl: 'custom/img/disabled_marker_closed.png',
                     shadowUrl: 'custom/img/marker_shadow.png',
                     iconSize: [40, 43],
                     iconAnchor: [20, 43],
@@ -94,6 +130,15 @@ window.app = (function () {
                     popupAnchor: [0, -30],
                     shadowSize: [40, 43],
                     shadowAnchor: [15, 43]
+                }),
+            disabled_icon: L.icon({
+                    iconUrl: 'custom/img/disabled_marker_collapse.png',
+                    shadowUrl: 'custom/img/marker_shadow.png',
+                    iconSize: [40, 43],
+                    iconAnchor: [20, 43],
+                    popupAnchor: [0, -30],
+                    shadowSize: [40, 43],
+                    shadowAnchor: [15, 43]
                 })
         },
         other: {
@@ -101,6 +146,15 @@ window.app = (function () {
             button_icon: "custom/img/event_other.png",
             marker_icon: L.icon({
                     iconUrl: 'custom/img/marker_other.png',
+                    shadowUrl: 'custom/img/marker_shadow.png',
+                    iconSize: [40, 43],
+                    iconAnchor: [20, 43],
+                    popupAnchor: [0, -30],
+                    shadowSize: [40, 43],
+                    shadowAnchor: [15, 43]
+                }),
+            disabled_icon: L.icon({
+                    iconUrl: 'custom/img/disabled_marker_other.png',
                     shadowUrl: 'custom/img/marker_shadow.png',
                     iconSize: [40, 43],
                     iconAnchor: [20, 43],
@@ -157,39 +211,24 @@ window.app = (function () {
 
             var location = {lat: -38.6942173, lng: -62.2566036}; // Bahia blanca
             var result = [ // Ejemplo marcadores al azar
-                {type: "fire", latlng: L.latLng(location.lat+0.005, location.lng+0.006), id:""},
-                {type: "other", latlng: L.latLng(location.lat-0.009, location.lng+0.003), id:""},
-                {type: "fire", latlng: L.latLng(location.lat-0.015, location.lng-0.001), id:""},
-                {type: "collapsed", latlng: L.latLng(location.lat-0.013, location.lng+0.016), id:""},
-                {type: "fire", latlng: L.latLng(location.lat+0.012, location.lng-0.016), id:""},
-                {type: "closed", latlng: L.latLng(location.lat+0.003, location.lng+0.005), id:""}
+                {latlng: L.latLng(location.lat+0.005, location.lng+0.006), id:"a8uhn7eHUJnheUJ3n9In", validated: true, type: "fire"},
+                {latlng: L.latLng(location.lat-0.009, location.lng+0.003), id:"won7HYd3N7jOmd7UHjw3", validated: true, type: "electricity"},
+                {latlng: L.latLng(location.lat-0.015, location.lng-0.001), id:"9oiMN7yHG6eHBGeBY382", validated: false, type: "other"},
+                {latlng: L.latLng(location.lat-0.013, location.lng+0.016), id:"HNue3HNplU893PmUjd3U", validated: true, type: "collapse"},
+                {latlng: L.latLng(location.lat+0.012, location.lng-0.016), id:"vhUH3m893NMehd7Uje31", validated: false, type: "collapse"},
+                {latlng: L.latLng(location.lat+0.003, location.lng+0.005), id:"Pmsu1w9UbeImJ3m93108", validated: false, type: "gas"}
             ];
 
             return fulfill(result);
         });
     };
 
-    public.addMarker = function(location){ // Registrar nuevo marcador en el server
+    public.getRoute = function(){ // Devuelve la ruta que hay que seguir para llegar el centro de evacuacion
         return new Promise(function(fulfill, reject){
 
-        });
-    };
 
-    public.removeMarker = function(id){
-        return new Promise(function(fulfill, reject){
-
-        });
-    };
-
-    public.getRoute = function(location){ // Devuelve la ruta que hay que seguir para llegar el centro de evacuacion
-        // La ruta debe ser un array de formato latLng ({lat:..., lng:...})
-
-        // TODO: Pedir datos y calcular ruta
-
-        return new Promise(function(fulfill, reject){
-            
+            var location = {lat: -38.6942173, lng: -62.2566036}; // Bahia blanca
             var result = [ // Ejemplo de una ruta cualquiera:
-                location, // Partida de la ubicacion actual
                 L.latLng(location.lat-0.005, location.lng-0.006),
                 L.latLng(location.lat-0.016, location.lng-0.007),
                 L.latLng(location.lat-0.018, location.lng-0.007),

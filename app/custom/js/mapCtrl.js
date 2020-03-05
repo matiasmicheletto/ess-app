@@ -1,7 +1,7 @@
 var mapCtrl = function () { // Controller vista home
 
     // Mostrar preloader por 10 seg o hasta que inicialice el mapa
-    //app.showPreloader("Loading...");
+    app.showPreloader("Loading...");
     setTimeout(function () {
         app.hidePreloader();
     }, 5000);
@@ -35,13 +35,14 @@ var mapCtrl = function () { // Controller vista home
       });
 
     // Variables globales del controller de la vista
+    var marker_list = []; // Lista de marcadores para guardar posiciones de wus y eventos
+    var waypoint_list = []; // Lista de waypoints para la ruta de escape
+    
     var current_location = null; // Ubicacion actual del usuario (Obj: {marker, accuracy})
-    var marker_list = []; // Lista de marcadores (L.marker) para guardar posiciones de wus y eventos
     var escape_route = null; // Ruta de escape calculada
     var tap_location; // Posicion donde clickea en el mapa (para reportar evento) (Obj: {lat, long})
-    const gpsUpdatePeriod = 20000; // Tasa de refresco de la posicion GPS (ms)
-    const routeUpdatePeriod = 20000; // El server de leaflet routing machine tiene una tasa de refresco minima (ms)
-    var lastRouteUpdate = 0; // Ultima actualizacion de la ruta
+
+    const gpsUpdatePeriod = 10000; // Tasa de refresco de posicion del usuario
 
     // Inicializar mapa
     var map = L.map('map').fitWorld();
@@ -59,7 +60,10 @@ var mapCtrl = function () { // Controller vista home
     }).addTo(map);
     */
 
-    var setUserLocation = function(latlng, accuracy){ // Establecer posicion del usuario
+
+    /// POSICIONAMIENTO Y RUTAS /////
+
+    var setUserLocation = function(latlng, accuracy){ // Establecer posicion del usuario en el mapa
         if(!current_location){ // Si el marcador no fue creado aun, crear y agregar al mapa
             // Crear marcador
             current_location = {
@@ -77,42 +81,11 @@ var mapCtrl = function () { // Controller vista home
             current_location.accuracy.setLatLng(latlng);
             current_location.accuracy.setRadius(accuracy);
         }
-        
-        // Pedir ruta de escape (si no esta conectado a un WU, devuelve camino hasta algun WU mas cercano)
-        if(Date.now() - lastRouteUpdate > routeUpdatePeriod){
-            app.showPreloader("Retrieving escape route...");
-            lastRouteUpdate = Date.now();
-            app.getRoute(latlng)
-            .then(function(waypoints){
-                if(escape_route) // Si ya estaba definida, eliminar del mapa
-                    map.removeControl(escape_route);
-                escape_route = L.Routing.control({
-                    waypoints: waypoints, // Recorrido
-                    collapsible: true, // Menu de instrucciones desplegable
-                    draggableWaypoints: false, // Que no se puedan arrastrar los puntos
-                    addWaypoints: false, // Que no se puedan agregar nuevos puntos
-                    createMarker: function(i, wp, nWps) {
-                        switch(i){
-                            case 0:
-                                return L.marker(wp.latLng, {
-                                    icon: startMarker
-                                }); 
-                            case nWps-1:     
-                                return L.marker(wp.latLng, {
-                                    icon: endMarker
-                                });
-                            default:   
-                                return L.marker(wp.latLng, {
-                                    icon: waypointMarker
-                                });
-                        }
-                      }
-                });
-                escape_route.addTo(map).hide(); // Agregar al mapa
-                app.hidePreloader();
-            });
-        }
+
+        if(waypoint_list) // Si existe ruta de escape, dibujar
+            drawEscapeRoute(current_location.marker.getLatLng(), waypoint_list);
     };
+
 
     // Callback de click o tap: mostrar menu para reportarr evento aqui
     map.on('click', function(e){
@@ -120,7 +93,7 @@ var mapCtrl = function () { // Controller vista home
         event_dialog.open(); // Mostrar menu para elegir tipo de evento a reportar
     });
 
-    // Callback de posicino GPS actualizada
+    // Callback de posicion GPS actualizada
     map.on('locationfound', function (e) {
         //console.log(e);
         setUserLocation(e.latlng, e.accuracy);
@@ -133,12 +106,13 @@ var mapCtrl = function () { // Controller vista home
         maxZoom: 16 // Zomm
     });
 
-    // Cada cierto intervalo, actualizar posicion (por si se va moviendo)
-    var gpsUpdater = setInterval(function(){
-        map.locate({});
+    var gpsUpdater = setInterval(function(){ // Actualizar posicion periodicamente
+        // Obtiene coordenadas (de la ubicacion del navegador, gps o red)
+        map.locate({}); // Cuando devuelve la ubicacion, se llama al evento "locationfound"
     },gpsUpdatePeriod);
 
-    app.setAutoLocation = function(enabled){
+
+    app.setAutoLocation = function(enabled){ // Callback para cuando se cambia el modo auto o manual
         if(gpsUpdater) // En cada cambio hay que restablecer el timer
             clearInterval(gpsUpdater);
 
@@ -151,67 +125,121 @@ var mapCtrl = function () { // Controller vista home
     };
 
 
-    // Descargar lista de marcadores de la db
-    app.getMarkers()
-    .then(function(markers_data){
-        if(markers_data){
-            marker_list = markers_data; // Guardar en objeto global           
-            console.log(marker_list.length+" marcadores cargados");
-            for(var k in marker_list){ // Agregar cada marcador al mapa
-                var marker = L.marker(marker_list[k].latlng, {icon: app.getEvent(marker_list[k].type).marker_icon});
-                marker.idx = k; // Indice del marcador en el arreglo (para identificarlo)
-                marker.on('click',function(e){ // Evento de clickeo sobre el marcador
-                    app.confirmDialog('Remove event from map?').then(function () { // Dialogo por defecto para confirmar la operacion con callback de ok
-                        marker_list.splice(e.target.idx,1); // Quitar marcador de la lista
-                        localStorage.setItem("marker_list", JSON.stringify(marker_list)); // Actualizar en storage
-                        e.target.removeFrom(map); // Quitarlo del mapa;   
-                    });
-                });
-                marker.addTo(map).bindPopup(app.getEvent(marker_list[k].type).text+" near this location.");
+    var drawEscapeRoute = function(start, waypoints){ // Dibuja la ruta de escape en el mapa a partir de los waypoints
+        waypoints.unshift(start); // Punto de partida en ubicacion actual
+        if(escape_route) // Si ya estaba definida, eliminar del mapa
+            map.removeControl(escape_route);
+        escape_route = L.Routing.control({ // Calcula la ruta optima dados los waypoints
+            waypoints: waypoints, // Recorrido
+            collapsible: true, // Menu de instrucciones desplegable
+            draggableWaypoints: false, // Que no se puedan arrastrar los puntos
+            addWaypoints: false, // Que no se puedan agregar nuevos puntos
+            createMarker: function(i, wp, nWps) {
+                switch(i){
+                    case 0:
+                        return L.marker(wp.latLng, {
+                            icon: startMarker
+                        }); 
+                    case nWps-1:     
+                        return L.marker(wp.latLng, {
+                            icon: endMarker
+                        });
+                    default:   
+                        return L.marker(wp.latLng, {
+                            icon: waypointMarker
+                        });
+                }
+              }
+        });
+        escape_route.addTo(map).hide(); // Agregar al mapa
+    };
+
+
+    var deleteEvent = function(event){ // Eliminar evento
+        var index = marker_list.findIndex(function(el){return el.id == event.ident}); // Buscar por id
+        marker_list.splice(index,1); // Quitar marcador de la lista
+        localStorage.setItem("marker_list", JSON.stringify(marker_list)); // Actualizar en storage
+        event.removeFrom(map); // Quitarlo del mapa;           
+    };
+
+    var drawEvent = function(event){ // Dibuja el evento en el mapa y define callback para eliminacion
+        var ev = app.getEvent(event.type); // Obtener el objeto evento para dibujar
+        var marker = L.marker(event.latlng, {icon: event.validated ? ev.marker_icon : ev.disabled_icon});
+        marker.ident = event.id; // Identificador del marcador
+        marker.on('click',function(e){ // Evento de clickeo sobre el marcador (para borrarlo)
+            app.confirmDialog('Remove event from map?').then(function () { // Dialogo por defecto para confirmar la operacion con callback de ok
+                deleteEvent(e.target); // Eliminar evento del mapa y del localstorage
+            });
+        });
+        marker.addTo(map).bindPopup(app.getEvent(event.type).text+" near this location."); // Dibujar y poner popup
+    };
+
+
+
+    // Descargar lista de marcadores de storage
+    marker_list = JSON.parse(localStorage.getItem('marker_list'));
+    if(marker_list){
+        console.log(marker_list.length+" marcadores cargados desde almacenamiento local");
+        for(var k in marker_list) // Agregar cada marcador al mapa
+            drawEvent(marker_list[k]); 
+    }else{ // Si no hay nada en storage, cargar de la app
+        app.getMarkers()
+        .then(function(markers_data){
+            if(markers_data){
+                console.log(markers_data.length+" marcadores descargados");
+                marker_list = markers_data;
+                localStorage.setItem("marker_list", JSON.stringify(marker_list)); // Actualizar en storage
+                for(var k in marker_list) // Agregar cada marcador al mapa
+                    drawEvent(marker_list[k]); 
             }
-        }
-    });
-    
+        });    
+    }
+
+    // Descargar ruta de escape del storage (se dibuja no bien se conozca la posicion del usuario)
+    waypoint_list = JSON.parse(localStorage.getItem('waypoint_list')); // Descargar de localstorage
+    if(!waypoint_list){
+        app.getRoute()
+        .then(function(waypoint_data){
+            if(waypoint_data){
+                waypoint_list = waypoint_data;
+                console.log(waypoint_data.length+" waypoint descargados");
+                localStorage.setItem("waypoint_list", JSON.stringify(waypoint_list)); // Actualizar en storage
+            }
+        });
+    }
+
+
+
+
+    ///// MENU EVENTOS //////
 
     // Crear lista de botones del dialogo para reportar eventos
     var buttons = []; // Lista de botones del menu
     forEach(app.getEventList(), function(ev, type, obj){ // Para cada evento definido, crear un boton del menu
         buttons.push({
             text: '<img src="'+ev.button_icon+'" style="max-width:50px;vertical-align: middle;"/> <span style="margin-left:20px;font-size:1.1em;"> '+ev.text+'</span>',
-            onClick: function () { // Callback de click de cada boton
-                    // Agregar marcador a la lista que tiene el mapa
-                    //console.log(app.getEvent(type).text);
-                    var marker; // Objeto marcador
-                    if(tap_location) // Si esta variable esta definida, el contexto es agregar marcador en la posicion donde se clickeo
-                        marker = L.marker(tap_location, {icon: app.getEvent(type).marker_icon});     
-                    else // Si no hay tap_location, se agrega el marcador a la posicion actual
-                        marker = L.marker(current_location.marker.getLatLng(), {icon: app.getEvent(type).marker_icon});    
-                    marker.on('click',function(e){ // Evento de clickeo sobre el marcador
-                        app.confirmDialog('Remove event from map?').then(function () { // Dialogo por defecto para confirmar la operacion con callback de ok
-                            marker_list.splice(e.target.idx,1); // Quitar marcador de la lista
-                            localStorage.setItem("marker_list", JSON.stringify(marker_list)); // Actualizar en storage
-                            e.target.removeFrom(map); // Quitarlo del mapa;   
-                        });
-                    });
-                    marker.idx = marker_list.length+1; // Indice del marcador en el arreglo (para identificarlo)
-                    marker.addTo(map).bindPopup(app.getEvent(type).text+" near this location.").openPopup();
-                    marker_list.push({ // Guardar el marcador en la lista
-                        type: type,
-                        latlng: marker.getLatLng()
-                    }); 
-                    localStorage.setItem("marker_list", JSON.stringify(marker_list)); // Actualizar en storage
-                }
+            onClick: function () { // Callback de click de cada boton -> dibujar marcador en mapa
+                var event = { // Nuevo evento creado
+                    latlng: tap_location ? tap_location : current_location.marker.getLatLng(),
+                    type: type,
+                    validated: false,
+                    id: generateID()
+                };
+                // Agregar marcador a la lista y dibujar en mapa
+                drawEvent(event);
+                marker_list.push(event);
+                localStorage.setItem("marker_list", JSON.stringify(marker_list)); // Actualizar en storage
+            }
         });
     });
 
-    // Agregar un boton para rescribir posicion del usuario manualmente
+    // Agregar un boton al menu para rescribir posicion del usuario manualmente
     buttons.push({
         text: '<img src="custom/img/override.png" style="max-width:50px;vertical-align: middle;"/> <span style="margin-left:20px;font-size:1.1em;">Override location</span>',
         onClick: function(){ // Callback al elegir manualmente la posicion
-            setUserLocation(tap_location,100); // Por defecto 25 metros de error
+            setUserLocation(tap_location,100); // Por defecto 100 metros de error
         }
     });
-
 
     // Crear dialogo de seleccion de eventos
     const event_dialog = app.createDialog({
