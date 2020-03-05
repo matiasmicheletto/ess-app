@@ -205,6 +205,55 @@ window.app = (function () {
     };
 
     //// COMUNICACION CON API WU /////
+    private.timerId = null;
+
+    public.initServer = function(){
+        console.log("Conectando con websocketserver");
+        //private.socket = new WebSocket("ws://192.168.4.1:8081");
+        private.socket = new WebSocket("ws://localhost:8081"); // Para debug
+
+        private.socket.onerror = function (error) {
+            console.log(error);
+        };
+
+        private.socket.onopen = function () { // Puerto conectado
+            if (private.timerId) {
+                clearInterval(private.timerId);
+                private.timerId = null;
+            }
+            public.wsStatus = "CONNECTED";
+        };
+
+        private.socket.onclose = function () { // Server no disponible (seguir intentando conectar)
+            console.log("Server desconectado");
+
+            if (public.wsStatus == "CONNECTED") // Si la conexion con server estaba abierta significa que se cerro el server
+                public.wsStatus = "CONNECTING"; // Pasar a estado conectando
+
+            if (!private.timerId) {
+                private.timerId = setInterval(function () { // Sigue intentando conectar indefinidamente
+                    private.socket = null;
+                    public.initServer();
+                }, 10000);
+            }
+        };
+
+        private.socket.onmessage = function (message) { // Respuesta del server
+            console.log("Recibido: "+message);
+        };
+    };
+
+    private.stopServer = function(){
+        public.wsStatus = "DISCONNECTED";
+        if (private.timerId) {
+            clearInterval(private.timerId);
+            private.timerId = null;
+        }
+        private.socket.onclose = function () {}; // Borrar la funcion para que no se vuelva a conectar
+        private.socket.close();
+        private.socket = null;
+    };
+
 
     public.getMarkers = function(){ // Retorna lista de marcadores de la db
         return new Promise(function(fulfill, reject){
@@ -238,6 +287,7 @@ window.app = (function () {
             return fulfill(result);
         });
     };
+
 
 
     //// INICIALIZACION ////
