@@ -126,11 +126,10 @@ var mapCtrl = function () { // Controller vista home
 
 
     var drawEscapeRoute = function(start, waypoints){ // Dibuja la ruta de escape en el mapa a partir de los waypoints
-        waypoints.unshift(start); // Punto de partida en ubicacion actual
         if(escape_route) // Si ya estaba definida, eliminar del mapa
             map.removeControl(escape_route);
         escape_route = L.Routing.control({ // Calcula la ruta optima dados los waypoints
-            waypoints: waypoints, // Recorrido
+            waypoints: [start].concat(waypoints), // Recorrido
             collapsible: true, // Menu de instrucciones desplegable
             draggableWaypoints: false, // Que no se puedan arrastrar los puntos
             addWaypoints: false, // Que no se puedan agregar nuevos puntos
