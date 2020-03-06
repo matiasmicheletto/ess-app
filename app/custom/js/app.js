@@ -274,6 +274,7 @@ window.app = (function () {
             // Los waypoints se van a dibujar cuando cambie la posicion del usuario
 
             // Actualizar en storage
+            localStorage.setItem("wu_list", JSON.stringify(app.wu_list)); 
             localStorage.setItem("marker_list", JSON.stringify(app.marker_list));
             localStorage.setItem("waypoint_list", JSON.stringify(app.waypoint_list)); 
         };
