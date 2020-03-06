@@ -206,7 +206,6 @@ var mapCtrl = function () { // Controller vista home
 
     var drawWU = function(wu){ // Dibuja la posicion de la WU
         // Determinar el icono a usar dependiendo del estado del WU
-        console.log(wu);
         
         var wuMarker;
         switch(wu.status){
