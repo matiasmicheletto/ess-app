@@ -34,11 +34,43 @@ var mapCtrl = function () { // Controller vista home
         shadowSize: [41, 41]
       });
 
+    const wuUpMarker = new L.Icon({
+        iconUrl: 'custom/img/marker_wu_up.png',
+        shadowUrl: 'custom/img/marker_shadow.png',
+        iconSize: [40, 43],
+        iconAnchor: [20, 43],
+        popupAnchor: [0, -30],
+        shadowSize: [40, 43],
+        shadowAnchor: [15, 43]
+      });
+
+    const wuDownMarker = new L.Icon({
+        iconUrl: 'custom/img/marker_wu_down.png',
+        shadowUrl: 'custom/img/marker_shadow.png',
+        iconSize: [40, 43],
+        iconAnchor: [20, 43],
+        popupAnchor: [0, -30],
+        shadowSize: [40, 43],
+        shadowAnchor: [15, 43]
+      });
+
+    const wuUnkMarker = new L.Icon({
+        iconUrl: 'custom/img/marker_wu_unk.png',
+        shadowUrl: 'custom/img/marker_shadow.png',
+        iconSize: [40, 43],
+        iconAnchor: [20, 43],
+        popupAnchor: [0, -30],
+        shadowSize: [40, 43],
+        shadowAnchor: [15, 43]
+      });
+
     // Variables globales del controller de la vista
     
     var current_location = null; // Ubicacion actual del usuario (Obj: {marker, accuracy})
     var escape_route = null; // Ruta de escape calculada
     var tap_location; // Posicion donde clickea en el mapa (para reportar evento) (Obj: {lat, long})
+    var drawnEvents = []; // Lista de eventos que se esta mostrando en mapa
+    var drawnWUs = []; // Lista de WUs dibujadas
 
     const gpsUpdatePeriod = 10000; // Tasa de refresco de posicion del usuario
 
@@ -169,24 +201,72 @@ var mapCtrl = function () { // Controller vista home
             });
         });
         marker.addTo(map).bindPopup(app.getEvent(event.type).text+" near this location."); // Dibujar y poner popup
+        drawnEvents.push(marker);
     };
 
+    var drawWU = function(wu){ // Dibuja la posicion de la WU
+        // Determinar el icono a usar dependiendo del estado del WU
+        console.log(wu);
+        
+        var wuMarker;
+        switch(wu.status){
+            case "up":
+                wuMarker = wuUpMarker;
+                break;
+            case "down":
+                wuMarker = wuDownMarker;
+                break;
+            case "unknown":
+                wuMarker = wuUnkMarker;
+                break;
+            default:
+                wuMarker = wuUnkMarker;
+                break;
+        }
 
-    // Descargar lista de marcadores de storage
+        var marker = L.marker(wu.latlng, {icon: wuMarker});
+        marker.ident = event.id; // Identificador del marcador del WU
+        marker.addTo(map).bindPopup("Witness Unit in this location."); // Dibujar y poner popup
+        drawnWUs.push(marker);
+    };
+
     app.updateMarkers = function(){ // Sobreescribo esta funcion declarada en la libreria
+        
+        console.log(drawnEvents);
+
+        // Antes de dibujar, eliminar los que estan en el mapa
+        for(var k in drawnWUs)
+            drawnWUs[k].removeFrom(map);
+        drawnWUs = [];
+        for(var k in drawnEvents)
+            drawnEvents[k].removeFrom(map);
+        drawnEvents = [];
+
+        // Luego dibujar
         for(var k in app.marker_list) // Agregar cada marcador al mapa
             drawEvent(app.marker_list[k]); 
+        for(var k in app.wu_list) // Dibujar las WUs
+            drawWU(app.wu_list[k]);
     }
 
+    // Descargar lista de marcadores de localstorage
     app.marker_list = JSON.parse(localStorage.getItem('marker_list'));
-    if(app.marker_list){
+    if(app.marker_list)
         console.log(app.marker_list.length+" marcadores cargados desde almacenamiento local");
-        app.updateMarkers();
-    }
+    else
+        app.marker_list = [];
+
+    // Descargar la lista de WUs de localstorage
+    app.wu_list = JSON.parse(localStorage.getItem('wu_list'));
+    if(app.wu_list)
+        console.log(app.wu_list.length+" WUs cargados desde almacenamiento local");
+    else
+        app.wu_list = [];
+
+    app.updateMarkers(); // Uso el mismo callback para dibujar marcadores en el mapa
 
     // Descargar ruta de escape del storage (se dibuja no bien se conozca la posicion del usuario)
     app.waypoint_list = JSON.parse(localStorage.getItem('waypoint_list')); // Descargar de localstorage
-
 
     app.initServer(); // Iniciar escuchador de conexion con WU
 
@@ -199,11 +279,12 @@ var mapCtrl = function () { // Controller vista home
         buttons.push({
             text: '<img src="'+ev.button_icon+'" style="max-width:50px;vertical-align: middle;"/> <span style="margin-left:20px;font-size:1.1em;"> '+ev.text+'</span>',
             onClick: function () { // Callback de click de cada boton -> dibujar marcador en mapa
-                var event = { // Nuevo evento creado
+                var event = { // Nuevo evento creado por el usuario
                     latlng: tap_location ? tap_location : current_location.marker.getLatLng(),
-                    type: type,
-                    validated: false,
-                    id: generateID()
+                    type: type, // Tipo de obstaculo/evento
+                    validated: false, // Inicialmente sin validar hast que no pase por una WU
+                    id: generateID(), // Identificador unico (declarada en utils.js)
+                    timestamp: Date.now() // Fecha hora de creacion en formato Unix
                 };
                 // Agregar marcador a la lista y dibujar en mapa
                 drawEvent(event);

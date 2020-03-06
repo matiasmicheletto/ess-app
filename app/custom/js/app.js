@@ -167,6 +167,7 @@ window.app = (function () {
 
     public.marker_list = []; // Lista de marcadores para guardar posiciones de wus y eventos
     public.waypoint_list = []; // Lista de waypoints para la ruta de escape
+    public.wu_list = []; // Lista de WU (Witness Units) o puntos de conexion
 
     public.getEventList = function(){ // Retornar toda la lista de eventos
         return private.event_types;
@@ -237,6 +238,7 @@ window.app = (function () {
             document.getElementById("wss_state_icon").innerHTML = "signal_wifi_4_bar";
 
             var database = { // Objeto a enviarle al server
+                wus: public.wu_list,
                 markers: public.marker_list,
                 waypoints: public.waypoint_list
             };
@@ -264,6 +266,7 @@ window.app = (function () {
             console.log("Nuevo mensaje del server: "+message.data);
             var database = JSON.parse(message.data);
             
+            public.wu_list = database.wus;
             public.marker_list = database.markers;
             public.waypoint_list = database.waypoints;
 
