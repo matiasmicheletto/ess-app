@@ -165,6 +165,9 @@ window.app = (function () {
         }
     };
 
+    public.marker_list = []; // Lista de marcadores para guardar posiciones de wus y eventos
+    public.waypoint_list = []; // Lista de waypoints para la ruta de escape
+
     public.getEventList = function(){ // Retornar toda la lista de eventos
         return private.event_types;
     };
@@ -207,21 +210,38 @@ window.app = (function () {
     //// COMUNICACION CON API WU /////
     private.timerId = null;
 
+    public.updateMarkers = function(){
+        console.log("Actualizar marcadores en mapa.");
+    };
+
     public.initServer = function(){
         console.log("Conectando con websocketserver");
-        //private.socket = new WebSocket("ws://192.168.4.1:8081");
-        private.socket = new WebSocket("ws://localhost:8081"); // Para debug
+        //private.socket = new WebSocket("ws://192.168.4.1:8081"); // Para la raspi
+        private.socket = new WebSocket("ws://localhost:8081"); // Para debug del server
 
         private.socket.onerror = function (error) {
             console.log(error);
         };
 
         private.socket.onopen = function () { // Puerto conectado
-            if (private.timerId) {
+            console.log("Conectado con websocketserver");
+            
+            if (private.timerId) { // No seguir intentando conectar
                 clearInterval(private.timerId);
                 private.timerId = null;
             }
+
             public.wsStatus = "CONNECTED";
+
+            // Cambiar el icono de estado
+            document.getElementById("wss_state_icon").innerHTML = "signal_wifi_4_bar";
+
+            var database = { // Objeto a enviarle al server
+                markers: public.marker_list,
+                waypoints: public.waypoint_list
+            };
+
+            private.socket.send(JSON.stringify(database));
         };
 
         private.socket.onclose = function () { // Server no disponible (seguir intentando conectar)
@@ -229,6 +249,8 @@ window.app = (function () {
 
             if (public.wsStatus == "CONNECTED") // Si la conexion con server estaba abierta significa que se cerro el server
                 public.wsStatus = "CONNECTING"; // Pasar a estado conectando
+
+            document.getElementById("wss_state_icon").innerHTML = "signal_wifi_off";
 
             if (!private.timerId) {
                 private.timerId = setInterval(function () { // Sigue intentando conectar indefinidamente
@@ -239,11 +261,22 @@ window.app = (function () {
         };
 
         private.socket.onmessage = function (message) { // Respuesta del server
-            console.log("Recibido: "+message);
+            console.log("Nuevo mensaje del server: "+message.data);
+            var database = JSON.parse(message.data);
+            
+            public.marker_list = database.markers;
+            public.waypoint_list = database.waypoints;
+
+            public.updateMarkers(); // Ejecutar callback para actualizar esta informacion en el mapa
+            // Los waypoints se van a dibujar cuando cambie la posicion del usuario
+
+            // Actualizar en storage
+            localStorage.setItem("marker_list", JSON.stringify(app.marker_list));
+            localStorage.setItem("waypoint_list", JSON.stringify(app.waypoint_list)); 
         };
     };
 
-    private.stopServer = function(){
+    public.stopServer = function(){
         public.wsStatus = "DISCONNECTED";
         if (private.timerId) {
             clearInterval(private.timerId);
@@ -253,41 +286,6 @@ window.app = (function () {
         private.socket.close();
         private.socket = null;
     };
-
-
-    public.getMarkers = function(){ // Retorna lista de marcadores de la db
-        return new Promise(function(fulfill, reject){
-
-            var location = {lat: -38.6942173, lng: -62.2566036}; // Bahia blanca
-            var result = [ // Ejemplo marcadores al azar
-                {latlng: L.latLng(location.lat+0.005, location.lng+0.006), id:"a8uhn7eHUJnheUJ3n9In", validated: true, type: "fire"},
-                {latlng: L.latLng(location.lat-0.009, location.lng+0.003), id:"won7HYd3N7jOmd7UHjw3", validated: true, type: "electricity"},
-                {latlng: L.latLng(location.lat-0.015, location.lng-0.001), id:"9oiMN7yHG6eHBGeBY382", validated: false, type: "other"},
-                {latlng: L.latLng(location.lat-0.013, location.lng+0.016), id:"HNue3HNplU893PmUjd3U", validated: true, type: "collapse"},
-                {latlng: L.latLng(location.lat+0.012, location.lng-0.016), id:"vhUH3m893NMehd7Uje31", validated: false, type: "collapse"},
-                {latlng: L.latLng(location.lat+0.003, location.lng+0.005), id:"Pmsu1w9UbeImJ3m93108", validated: false, type: "gas"}
-            ];
-
-            return fulfill(result);
-        });
-    };
-
-    public.getRoute = function(){ // Devuelve la ruta que hay que seguir para llegar el centro de evacuacion
-        return new Promise(function(fulfill, reject){
-
-
-            var location = {lat: -38.6942173, lng: -62.2566036}; // Bahia blanca
-            var result = [ // Ejemplo de una ruta cualquiera:
-                L.latLng(location.lat-0.005, location.lng-0.006),
-                L.latLng(location.lat-0.016, location.lng-0.007),
-                L.latLng(location.lat-0.018, location.lng-0.007),
-                L.latLng(location.lat-0.02, location.lng-0.008)
-            ];
-
-            return fulfill(result);
-        });
-    };
-
 
 
     //// INICIALIZACION ////

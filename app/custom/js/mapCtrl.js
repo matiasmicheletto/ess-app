@@ -35,8 +35,6 @@ var mapCtrl = function () { // Controller vista home
       });
 
     // Variables globales del controller de la vista
-    var marker_list = []; // Lista de marcadores para guardar posiciones de wus y eventos
-    var waypoint_list = []; // Lista de waypoints para la ruta de escape
     
     var current_location = null; // Ubicacion actual del usuario (Obj: {marker, accuracy})
     var escape_route = null; // Ruta de escape calculada
@@ -82,8 +80,8 @@ var mapCtrl = function () { // Controller vista home
             current_location.accuracy.setRadius(accuracy);
         }
 
-        if(waypoint_list) // Si existe ruta de escape, dibujar
-            drawEscapeRoute(current_location.marker.getLatLng(), waypoint_list);
+        if(app.waypoint_list) // Si existe ruta de escape, dibujar
+            drawEscapeRoute(current_location.marker.getLatLng(), app.waypoint_list);
     };
 
 
@@ -155,9 +153,9 @@ var mapCtrl = function () { // Controller vista home
 
 
     var deleteEvent = function(event){ // Eliminar evento
-        var index = marker_list.findIndex(function(el){return el.id == event.ident}); // Buscar por id
-        marker_list.splice(index,1); // Quitar marcador de la lista
-        localStorage.setItem("marker_list", JSON.stringify(marker_list)); // Actualizar en storage
+        var index = app.marker_list.findIndex(function(el){return el.id == event.ident}); // Buscar por id
+        app.marker_list.splice(index,1); // Quitar marcador de la lista
+        localStorage.setItem("marker_list", JSON.stringify(app.marker_list)); // Actualizar en storage
         event.removeFrom(map); // Quitarlo del mapa;           
     };
 
@@ -174,40 +172,23 @@ var mapCtrl = function () { // Controller vista home
     };
 
 
-
     // Descargar lista de marcadores de storage
-    marker_list = JSON.parse(localStorage.getItem('marker_list'));
-    if(marker_list){
-        console.log(marker_list.length+" marcadores cargados desde almacenamiento local");
-        for(var k in marker_list) // Agregar cada marcador al mapa
-            drawEvent(marker_list[k]); 
-    }else{ // Si no hay nada en storage, cargar de la app
-        app.getMarkers()
-        .then(function(markers_data){
-            if(markers_data){
-                console.log(markers_data.length+" marcadores descargados");
-                marker_list = markers_data;
-                localStorage.setItem("marker_list", JSON.stringify(marker_list)); // Actualizar en storage
-                for(var k in marker_list) // Agregar cada marcador al mapa
-                    drawEvent(marker_list[k]); 
-            }
-        });    
+    app.updateMarkers = function(){ // Sobreescribo esta funcion declarada en la libreria
+        for(var k in app.marker_list) // Agregar cada marcador al mapa
+            drawEvent(app.marker_list[k]); 
+    }
+
+    app.marker_list = JSON.parse(localStorage.getItem('marker_list'));
+    if(app.marker_list){
+        console.log(app.marker_list.length+" marcadores cargados desde almacenamiento local");
+        app.updateMarkers();
     }
 
     // Descargar ruta de escape del storage (se dibuja no bien se conozca la posicion del usuario)
-    waypoint_list = JSON.parse(localStorage.getItem('waypoint_list')); // Descargar de localstorage
-    if(!waypoint_list){
-        app.getRoute()
-        .then(function(waypoint_data){
-            if(waypoint_data){
-                waypoint_list = waypoint_data;
-                console.log(waypoint_data.length+" waypoint descargados");
-                localStorage.setItem("waypoint_list", JSON.stringify(waypoint_list)); // Actualizar en storage
-            }
-        });
-    }
+    app.waypoint_list = JSON.parse(localStorage.getItem('waypoint_list')); // Descargar de localstorage
 
 
+    app.initServer(); // Iniciar escuchador de conexion con WU
 
 
     ///// MENU EVENTOS //////
@@ -226,8 +207,8 @@ var mapCtrl = function () { // Controller vista home
                 };
                 // Agregar marcador a la lista y dibujar en mapa
                 drawEvent(event);
-                marker_list.push(event);
-                localStorage.setItem("marker_list", JSON.stringify(marker_list)); // Actualizar en storage
+                app.marker_list.push(event);
+                localStorage.setItem("marker_list", JSON.stringify(app.marker_list)); // Actualizar en storage
             }
         });
     });
