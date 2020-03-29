@@ -10,7 +10,8 @@
 const WebSocketServer = require('ws').Server; 
 const Fs = require('fs');
 
-var wss = new WebSocketServer({port: 8081}); // Servidor WebSocket en puerto 8081
+//var wss = new WebSocketServer({port: 8081}); // Servidor WebSocket en puerto 8081 para debug
+var wss = new WebSocketServer({port: 443}); // Servidor WebSocket en puerto 443
 
 var clients = []; // Lista de clientes conectados
 
