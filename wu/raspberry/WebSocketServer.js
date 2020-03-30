@@ -87,6 +87,8 @@ var writeDatabase = function (db) { // Guardar nueva database en nuevo archivo
 
 var mergeDatabases = function (local_db, remote_db) { // Combinar informacion de dos bases de datos
 
+    if(DEBUG) console.log("Combinando informacion...");
+
     // Crear objeto con lista de marcadores de las dos db
     var newMarkerList = {};
     for(var k in local_db.markers) // Agregar los marcadores locales
@@ -95,18 +97,24 @@ var mergeDatabases = function (local_db, remote_db) { // Combinar informacion de
     for(var k in remote_db.markers) // Agregar los marcadores que se importaron
         if(!newMarkerList[remote_db.markers[k].id]){ // Si no lo tiene
             newMarkerList[remote_db.markers[k].id] = remote_db.markers[k]; // Agregar
+            if(DEBUG) console.log("Nuevo marcador agregado a la db local: "+remote_db.markers[k].id);
+        }
 
     
     // Poner a la db local, la nueva lista de marcadores
 
-    local_db.markers = []; // Borrar arreglo
+    var markers = []; // Borrar arreglo
     for(var k in newMarkerList)
-        local_db.markers.push(newMarkerList[k]);
+        markers.push(newMarkerList[k]);
 
 
     // TODO: Combinar la lista de wu y de waypoints ?
 
-    return local_db;
+    return {
+        wus: local_db.wus,
+        markers: markers,
+        waypoints: local_db.waypoints
+    };
 };
 
 
