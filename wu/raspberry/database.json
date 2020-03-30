@@ -5,28 +5,32 @@
             "lng": -62.2406036
         },
         "id": "wu_0",
-        "status": "up"
+        "status": "up",
+        "timestamp": 1579123392000
     }, {
         "latlng": {
             "lat": -38.704217299999996,
             "lng": -62.236603599999995
         },
         "id": "wu_1",
-        "status": "up"
+        "status": "up",
+        "timestamp": 1579123392000
     }, {
         "latlng": {
             "lat": -38.674217299999995,
             "lng": -62.2626036
         },
         "id": "wu_2",
-        "status": "down"
+        "status": "down",
+        "timestamp": 1579123392000
     }, {
         "latlng": {
             "lat": -38.7022173,
             "lng": -62.2386036
         },
         "id": "wu_3",
-        "status": "unknown"
+        "status": "unknown",
+        "timestamp": 1579123392000
     }],
     "markers": [{
         "latlng": {

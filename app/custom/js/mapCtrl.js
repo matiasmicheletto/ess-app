@@ -6,6 +6,9 @@ var mapCtrl = function () { // Controller vista home
         app.hidePreloader();
     }, 5000);
 
+    // Coordenadas por defecto donde inicia el mapa
+    const defaultLatLng = [-38.7164681, -62.2699996];
+
     // Marcadores predefinidos
     const startMarker = new L.Icon({
         iconUrl: 'custom/img/start_marker.png',
@@ -75,7 +78,10 @@ var mapCtrl = function () { // Controller vista home
     const gpsUpdatePeriod = 10000; // Tasa de refresco de posicion del usuario
 
     // Inicializar mapa
-    var map = L.map('map').fitWorld();
+    var map = L.map('map',{
+        center:defaultLatLng,
+        zoom:8
+    });
     
     L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
         maxZoom: 18,

@@ -11,10 +11,15 @@ const WebSocketServer = require('ws').Server; // WSS
 const MQTT = require('mqtt'); // MQTT
 const Fs = require('fs'); // File Storage
 
-// Topics mqtt
-const inTopic = 'wu1/messajeIn';
-const outTopic = 'wu1/messajeOut';
+// Config mqtt
+const brokerAddr = 'mqtt://localhost:1883';
+const inTopic = 'wu1/messageIn';
+const outTopic = 'wu1/messageOut';
 
+const txPeriod = 10000; // Periodo de transmision de datos mqtt
+var txEnabled = false; // Habilitacion para transmitir
+
+const DEBUG = true; // Modo debuggeo
 
 /////// WEB SOCKETS ////////
 
@@ -29,7 +34,7 @@ wss.on('connection', function (cl) { // Callback de conexion con nuevo cliente
 
     clients.push(cl); // Agregar nuevo cliente a la lista
 
-    console.log("Nuevo cliente conectado.");
+    if(DEBUG) console.log("Nuevo cliente conectado.");
     //console.log(clients);
 
     // Definir callbacks
@@ -39,46 +44,67 @@ wss.on('connection', function (cl) { // Callback de conexion con nuevo cliente
         
         var local_db = loadDatabase(); // Leer datos locales
 
-        var resulting_db = mergeDatabases(local_db, remote_db); // Combinar con lo recibido
+        var resulting_db = mergeDatabases(local_db, remote_db); // Combinar con lo recibido de la app
 
-        cl.send(JSON.stringify(resulting_db)); // Responder nueva base de datos a la app
+        cl.send(JSON.stringify(resulting_db)); // Responder la nueva base de datos a la app
 
         writeDatabase(resulting_db); // Actualizar base de datos local
     });
 
     cl.on('close', function () { // Callback cierre de conexion
         clients.splice(cl.index, 1); // Quitar del arreglo
-        console.log("Cliente desconectado.");
+        if(DEBUG) console.log("Cliente desconectado.");
         //console.log(clients);
     });
 });
 
-console.log("Server WU esperando conexiones...");
+if(DEBUG) console.log("Server WU esperando conexiones...");
+
 
 
 
 ///// LECTURA / ESCRITURA DB ///////
 
 var loadDatabase = function () { // Leer base de datos mas reciente desde archivo
-
+    if(DEBUG) console.log("Leyendo database.json local.");
     var database = null;
     try {
         database = JSON.parse(Fs.readFileSync('database.json'));
     } catch (err) {
-        console.log(err);
+        if(DEBUG){
+            console.log("Error de lectura database.json:");
+            console.log(err);
+        } 
     }
 
-    if (database)
-        return database;
+    if (database) return database;
 };
 
 var writeDatabase = function (db) { // Guardar nueva database en nuevo archivo
+    if(DEBUG) console.log("Actualizando database.json local.");
     Fs.writeFileSync('database.json', JSON.stringify(db));
 };
 
-var mergeDatabases = function (local_db, remote_db) { // Combinar informacion
+var mergeDatabases = function (local_db, remote_db) { // Combinar informacion de dos bases de datos
 
-    // TODO: Algoritmo de combinacion de informacion
+    // Crear objeto con lista de marcadores de las dos db
+    var newMarkerList = {};
+    for(var k in local_db.markers) // Agregar los marcadores locales
+        newMarkerList[local_db.markers[k].id] = local_db.markers[k];
+    
+    for(var k in remote_db.markers) // Agregar los marcadores que se importaron
+        if(!newMarkerList[remote_db.markers[k].id]){ // Si no lo tiene
+            newMarkerList[remote_db.markers[k].id] = remote_db.markers[k]; // Agregar
+
+    
+    // Poner a la db local, la nueva lista de marcadores
+
+    local_db.markers = []; // Borrar arreglo
+    for(var k in newMarkerList)
+        local_db.markers.push(newMarkerList[k]);
+
+
+    // TODO: Combinar la lista de wu y de waypoints ?
 
     return local_db;
 };
@@ -88,19 +114,51 @@ var mergeDatabases = function (local_db, remote_db) { // Combinar informacion
 
 //////// MQTT //////////////
 
-var mqttClient = MQTT.connect('mqtt://localhost');
+var mqttClient = MQTT.connect(brokerAddr, {port:1883});
+
+// Parar desconectar usar:
+//     mqttClient.end();
 
 mqttClient.on('connect', function () { // Callback conexion
+    if(DEBUG) console.log("Conectado al broker: "+brokerAddr);
     mqttClient.subscribe(inTopic, function (err) {
+        if(DEBUG) console.log("Error de subscribe");
         if(err) console.log(err);
     });
+
+    txEnabled = true; // Habilitado para transmitir
 });
 
 mqttClient.on('message', function (topic, message) { // Mensaje es tipo Buffer
-    console.log("["+topic+"] - Mensaje del broker: "+message.toString());
-    mqttClient.end(); // Esto va?
+    if(DEBUG) console.log("["+topic+"] - Mensaje del broker: "+message.toString());
 });
 
 var mqttSend = function(payload){ // Enviar mensaje al broker
-    mqttClient.publish(outTopic, payload);
+    return new Promise(function(fulfill,reject){ // Retorna callback asincrono
+        if(DEBUG) console.log("Enviando "+payload);
+        mqttClient.publish(outTopic, payload, fulfill);
+    });
 };
+
+var timer = setInterval( function(){ // Funcion periodica
+    // Va mandando los markers de a uno por vez cada 10 segundos hasta que figuren todos como reported = true
+    // Para detener usar: 
+    //     clearInterval(timer)
+
+    var local_db = loadDatabase(); // Leer datos locales
+
+    if(txEnabled){ // Si esta habilitado para transmitir
+        for(var k in local_db.markers){ // Busca el primer marcador de la db que no fue transmitido
+            if(!local_db.markers[k].reported){
+                var data = local_db.markers[k]; // Copia del marcador
+                data.reported = true; // Cambiar estado para que llegue como reported
+                mqttSend(JSON.stringify(data))
+                .then(function(){ // Cambiar el reported por true si envia bien el dato
+                    local_db.markers[k].reported = true;
+                    writeDatabase(local_db); // Actualizar
+                })
+                break; // Terminar ciclo for
+            }
+        }
+    }
+}, txPeriod);
