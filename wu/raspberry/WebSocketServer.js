@@ -35,8 +35,8 @@ wss.on('connection', function (cl) { // Callback de conexion con nuevo cliente
     // Definir callbacks
 
     cl.on('message', function (remote_db) { // Callback cuando el cliente envia datos        
-        //console.log("Recibido: ",remote_db); // Se asume que manda su base de datos siempre
-
+        //console.log("Recibido: ",data); // Se asume que manda su base de datos siempre
+        
         var local_db = loadDatabase(); // Leer datos locales
 
         var resulting_db = mergeDatabases(local_db, remote_db); // Combinar con lo recibido
