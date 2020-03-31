@@ -209,7 +209,8 @@ window.app = (function () {
     };
 
     //// COMUNICACION CON API WU /////
-    private.timerId = null;
+    private.timerId = null; // Interval para actualizar conexion con wss
+    private.updTimerId = null; // Interval para enviar datos mientras esta conectado
 
     public.updateMarkers = function(){
         console.log("Actualizar marcadores en mapa.");
@@ -243,7 +244,10 @@ window.app = (function () {
                 waypoints: public.waypoint_list
             };
 
-            private.socket.send(JSON.stringify(database));
+            // Enviar la base de datos local cada 15 segundos
+            private.updTimerId = setInterval(function(){
+                private.socket.send(JSON.stringify(database));
+            }, 15000);
         };
 
         private.socket.onclose = function () { // Server no disponible (seguir intentando conectar)
@@ -259,6 +263,10 @@ window.app = (function () {
                     private.socket = null;
                     public.initServer();
                 }, 10000);
+            }
+
+            if (private.updTimerId){ // Cuando se desconecta, dejar de enviar la base de datos
+                clearInterval(private.updTimerId);
             }
         };
 
