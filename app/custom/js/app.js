@@ -238,14 +238,13 @@ window.app = (function () {
             // Cambiar el icono de estado
             document.getElementById("wss_state_icon").innerHTML = "signal_wifi_4_bar";
 
-            var database = { // Objeto a enviarle al server
-                wus: public.wu_list,
-                markers: public.marker_list,
-                waypoints: public.waypoint_list
-            };
-
             // Enviar la base de datos local cada 15 segundos
             private.updTimerId = setInterval(function(){
+                var database = { // Objeto a enviarle al server
+                    wus: public.wu_list,
+                    markers: public.marker_list,
+                    waypoints: public.waypoint_list
+                };
                 private.socket.send(JSON.stringify(database));
             }, 15000);
         };
@@ -267,6 +266,7 @@ window.app = (function () {
 
             if (private.updTimerId){ // Cuando se desconecta, dejar de enviar la base de datos
                 clearInterval(private.updTimerId);
+                private.updTimerId = null;
             }
         };
 
