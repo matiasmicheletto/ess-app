@@ -11,8 +11,12 @@ const WebSocketServer = require('ws').Server; // WSS
 const MQTT = require('mqtt'); // MQTT
 const Fs = require('fs'); // File Storage
 
+// Puertos
+const WSS_PORT = 443;
+const MQTT_PORT = 1883;
+
 // Config mqtt
-const brokerAddr = 'mqtt://localhost:1883';
+const brokerAddr = 'mqtt://localhost:'+MQTT_PORT;
 const inTopic = 'wu1/messageIn';
 const outTopic = 'wu1/messageOut';
 
@@ -23,8 +27,7 @@ const DEBUG = true; // Modo debuggeo
 
 /////// WEB SOCKETS ////////
 
-//var wss = new WebSocketServer({port: 8081}); // Servidor WebSocket en puerto 8081 para debug
-var wss = new WebSocketServer({port: 443}); // Servidor WebSocket en puerto 443
+var wss = new WebSocketServer({port: WSS_PORT}); // Servidor WebSocket en puerto 443
 
 var clients = []; // Lista de clientes conectados al web socket server
 
@@ -39,8 +42,10 @@ wss.on('connection', function (cl) { // Callback de conexion con nuevo cliente
 
     // Definir callbacks
 
-    cl.on('message', function (remote_db) { // Callback cuando el cliente envia datos        
+    cl.on('message', function (data) { // Callback cuando el cliente envia datos        
         //console.log("Recibido: ",data); // Se asume que manda su base de datos siempre
+        
+        var remote_db = JSON.parse(data); // Base de datos enviada por la app
         
         var local_db = loadDatabase(); // Leer datos locales
 
@@ -87,7 +92,11 @@ var writeDatabase = function (db) { // Guardar nueva database en nuevo archivo
 
 var mergeDatabases = function (local_db, remote_db) { // Combinar informacion de dos bases de datos
 
-    if(DEBUG) console.log("Combinando informacion...");
+    if(DEBUG) {
+        console.log("Combinando bases de datos...");
+        console.log("Eventos recibidos desde app: "+remote_db.markers.length);
+        console.log("Eventos en base de datos local: "+local_db.markers.length);
+    }
 
     // Crear objeto con lista de marcadores de las dos db
     var newMarkerList = {};
@@ -96,19 +105,23 @@ var mergeDatabases = function (local_db, remote_db) { // Combinar informacion de
     
     for(var k in remote_db.markers) // Agregar los marcadores que se importaron
         if(!newMarkerList[remote_db.markers[k].id]){ // Si no lo tiene
+            remote_db.markers[k].validated = true; // Marcar como validado
             newMarkerList[remote_db.markers[k].id] = remote_db.markers[k]; // Agregar
             if(DEBUG) console.log("Nuevo marcador agregado a la db local: "+remote_db.markers[k].id);
         }
-
     
-    // Poner a la db local, la nueva lista de marcadores
-
+    // Crear la nueva lista de marcadores como arreglo
     var markers = []; // Borrar arreglo
     for(var k in newMarkerList)
         markers.push(newMarkerList[k]);
 
-
+    //
+    //
     // TODO: Combinar la lista de wu y de waypoints ?
+    //
+    //
+
+    if(DEBUG) console.log("Retornando: "+markers.length+" eventos totales.");
 
     return {
         wus: local_db.wus,
@@ -122,7 +135,7 @@ var mergeDatabases = function (local_db, remote_db) { // Combinar informacion de
 
 //////// MQTT //////////////
 
-var mqttClient = MQTT.connect(brokerAddr, {port:1883});
+var mqttClient = MQTT.connect(brokerAddr, {port:MQTT_PORT});
 
 // Parar desconectar usar:
 //     mqttClient.end();
@@ -165,7 +178,7 @@ var timer = setInterval( function(){ // Funcion periodica
                     local_db.markers[k].reported = true;
                     writeDatabase(local_db); // Actualizar
                 })
-                break; // Terminar ciclo for
+                break; // Terminar ciclo for para que no envie mas eventos hasta la proxima transmision
             }
         }
     }

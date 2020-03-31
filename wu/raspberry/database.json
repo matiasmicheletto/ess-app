@@ -15,22 +15,6 @@
         "id": "wu_1",
         "status": "up",
         "timestamp": 1579123392000
-    }, {
-        "latlng": {
-            "lat": -38.674217299999995,
-            "lng": -62.2626036
-        },
-        "id": "wu_2",
-        "status": "down",
-        "timestamp": 1579123392000
-    }, {
-        "latlng": {
-            "lat": -38.7022173,
-            "lng": -62.2386036
-        },
-        "id": "wu_3",
-        "status": "unknown",
-        "timestamp": 1579123392000
     }],
     "markers": [{
         "latlng": {
@@ -44,54 +28,24 @@
         "type": "fire"
     }, {
         "latlng": {
-            "lat": -38.7032173,
-            "lng": -62.2536036
+            "lat": -38.716064949075566,
+            "lng": -62.25016593933106
         },
-        "id": "won7HYd3N7jOmd7UHjw3",
-        "timestamp": 1579126992000,
+        "type": "collapse",
         "validated": true,
         "reported": false,
-        "type": "electricity"
+        "id": "_sw8c8d9umph",
+        "timestamp": 1585652430634
     }, {
         "latlng": {
-            "lat": -38.7092173,
-            "lng": -62.257603599999996
+            "lat": -38.70789091725499,
+            "lng": -62.25548744201661
         },
-        "id": "9oiMN7yHG6eHBGeBY382",
-        "timestamp": 1579123792000,
-        "validated": false,
-        "reported": false,
-        "type": "other"
-    }, {
-        "latlng": {
-            "lat": -38.707217299999996,
-            "lng": -62.2406036
-        },
-        "id": "HNue3HNplU893PmUjd3U",
-        "timestamp": 1579124392000,
+        "type": "electricity",
         "validated": true,
         "reported": false,
-        "type": "collapse"
-    }, {
-        "latlng": {
-            "lat": -38.6822173,
-            "lng": -62.2726036
-        },
-        "id": "vhUH3m893NMehd7Uje31",
-        "timestamp": 1579127092000,
-        "validated": false,
-        "reported": false,
-        "type": "collapse"
-    }, {
-        "latlng": {
-            "lat": -38.6912173,
-            "lng": -62.251603599999996
-        },
-        "id": "Pmsu1w9UbeImJ3m93108",
-        "timestamp": 1579133392000,
-        "validated": false,
-        "reported": false,
-        "type": "gas"
+        "id": "_uwovk0ubv1",
+        "timestamp": 1585652720402
     }],
     "waypoints": [{
         "lat": -38.6992173,

@@ -218,7 +218,7 @@ window.app = (function () {
     public.initServer = function(){
         console.log("Conectando con websocketserver");
         private.socket = new WebSocket("ws://192.168.4.1:443"); // Para la raspi
-        //private.socket = new WebSocket("ws://localhost:8081"); // Para debug del server
+        //private.socket = new WebSocket("ws://localhost:443"); // Para debug del server
 
         private.socket.onerror = function (error) {
             console.log(error);

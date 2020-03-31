@@ -7,7 +7,7 @@ var mapCtrl = function () { // Controller vista home
     }, 5000);
 
     // Coordenadas por defecto donde inicia el mapa
-    const defaultLatLng = [-38.7164681, -62.2699996];
+    const defaultLatLng = [-38.7164681, -62.2699996]; // Bahia blanca
 
     // Marcadores predefinidos
     const startMarker = new L.Icon({
@@ -288,6 +288,7 @@ var mapCtrl = function () { // Controller vista home
                     latlng: tap_location ? tap_location : current_location.marker.getLatLng(),
                     type: type, // Tipo de obstaculo/evento
                     validated: false, // Inicialmente sin validar hast que no pase por una WU
+                    reported: false, // Indica si el evento fue reportado por alguna WU
                     id: generateID(), // Identificador unico (declarada en utils.js)
                     timestamp: Date.now() // Fecha hora de creacion en formato Unix
                 };
