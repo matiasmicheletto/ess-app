@@ -152,6 +152,16 @@ mqttClient.on('connect', function () { // Callback conexion
 
 mqttClient.on('message', function (topic, message) { // Mensaje es tipo Buffer
     if(DEBUG) console.log("["+topic+"] - Mensaje del broker: "+message.toString());
+    
+    var remote_db = JSON.parse(message); // Base de datos enviada por la app
+    
+    console.log('mensaje parseado: '+remote_db);
+        
+    var local_db = loadDatabase(); // Leer datos locales
+
+    var resulting_db = mergeDatabases(local_db, remote_db); // Combinar con lo recibido de la app
+
+    writeDatabase(resulting_db); // Actualizar base de datos local
 });
 
 var mqttSend = function(payload){ // Enviar mensaje al broker
