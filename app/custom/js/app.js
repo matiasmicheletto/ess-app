@@ -20,6 +20,8 @@ window.app = (function () {
         }
     ];
 
+    const wuDBUpdatePeriod = 15000; // Tasa de actualizacion de la database con la WU
+
     var public = {}; // Atributos y metodos publicos
     var private = {}; // Atributos y metodo privados
 
@@ -218,8 +220,8 @@ window.app = (function () {
 
     public.initServer = function(){
         console.log("Conectando con websocketserver");
-        private.socket = new WebSocket("ws://192.168.4.1:443"); // Para la raspi
-        //private.socket = new WebSocket("ws://localhost:443"); // Para debug del server
+        //private.socket = new WebSocket("ws://192.168.4.1:443"); // Para la raspi
+        private.socket = new WebSocket("ws://localhost:443"); // Para debug del server
 
         private.socket.onerror = function (error) {
             console.log(error);
@@ -246,7 +248,7 @@ window.app = (function () {
                     waypoints: public.waypoint_list
                 };
                 private.socket.send(JSON.stringify(database));
-            }, 15000);
+            }, wuDBUpdatePeriod);
         };
 
         private.socket.onclose = function () { // Server no disponible (seguir intentando conectar)

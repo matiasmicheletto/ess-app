@@ -6,9 +6,6 @@ var mapCtrl = function () { // Controller vista home
         app.hidePreloader();
     }, 5000);
 
-    // Coordenadas por defecto donde inicia el mapa
-    const defaultLatLng = [-38.7164681, -62.2699996]; // Bahia blanca
-
     // Marcadores predefinidos
     const startMarker = new L.Icon({
         iconUrl: 'custom/img/start_marker.png',
@@ -75,7 +72,8 @@ var mapCtrl = function () { // Controller vista home
     var drawnEvents = []; // Lista de eventos que se esta mostrando en mapa
     var drawnWUs = []; // Lista de WUs dibujadas
 
-    const gpsUpdatePeriod = 10000; // Tasa de refresco de posicion del usuario
+    const gpsUpdatePeriod = 20000; // Tasa de refresco de posicion del usuario
+    const defaultLatLng = [-38.7164681, -62.2699996]; // Coordenadas por defecto donde inicia el mapa // Bahia blanca
 
     // Inicializar mapa
     var map = L.map('map',{
@@ -86,7 +84,7 @@ var mapCtrl = function () { // Controller vista home
     L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
         maxZoom: 18,
         id: 'mapbox/streets-v11',
-        accessToken: 'pk.eyJ1IjoibWF0aWFzbWljaGVsZXR0byIsImEiOiJjazVsa2ZtamowZHJnM2ttaXFmZGo1MDhtIn0.8iBO-J1wj34LIqq-e4Me5w'
+        accessToken: 'pk.eyJ1IjoibWF0aWFzbWljaGVsZXR0byIsImEiOiJjazhodzRtOGwwNTlrM2VvYTRvdnJmYTd3In0.lKUnMvbZ2E6Ywqy5C-Wu9Q'
     }).addTo(map);
     
     /* 
@@ -118,8 +116,9 @@ var mapCtrl = function () { // Controller vista home
             current_location.accuracy.setRadius(accuracy);
         }
 
+        console.log(latlng);
         if(app.waypoint_list) // Si existe ruta de escape, dibujar
-            drawEscapeRoute(current_location.marker.getLatLng(), app.waypoint_list);
+            drawEscapeRoute(latlng, app.waypoint_list);
     };
 
 
@@ -186,9 +185,13 @@ var mapCtrl = function () { // Controller vista home
                 }
               }
         });
-        escape_route.addTo(map).hide(); // Agregar al mapa
+        escape_route // Agregar al mapa
+        .addTo(map)
+        .on('routingerror', function(e) {
+            console.log(e);
+        })
+        .hide(); 
     };
-
 
     var deleteEvent = function(event){ // Eliminar evento
         var index = app.marker_list.findIndex(function(el){return el.id == event.ident}); // Buscar por id
@@ -304,7 +307,9 @@ var mapCtrl = function () { // Controller vista home
     buttons.push({
         text: '<img src="custom/img/override.png" style="max-width:50px;vertical-align: middle;"/> <span style="margin-left:20px;font-size:1.1em;">Override location</span>',
         onClick: function(){ // Callback al elegir manualmente la posicion
-            setUserLocation(tap_location,100); // Por defecto 100 metros de error
+            var latLng = {lat:tap_location.lat, lng:tap_location.lng};
+            console.log(latLng);
+            setUserLocation(latLng,100); // Por defecto 100 metros de error
         }
     });
 
